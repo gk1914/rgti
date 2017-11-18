@@ -3,6 +3,10 @@ var canvas;
 var gl;
 var shaderProgram;
 
+
+// 3d physics engine
+var world;
+
 // Buffers
 var worldVertexPositionBuffer = null;
 var worldVertexTextureCoordBuffer = null;
@@ -40,9 +44,21 @@ var yMouse = 0;
 var rotMouse = 0;
 // Used to make us "jog" up and down as we move forward.
 var joggingAngle = 0;
+var movingSpeed = 0.008;
+
+var spawnPosition = [1,0,0];
 
 // Helper variable for animation
 var lastTime = 0;
+
+
+
+
+// Moving bombs
+
+var bombSpeed = 0.01;
+
+
 
 //
 // Matrix utility functions
@@ -252,6 +268,35 @@ function handleLoadedWorld(data) {
 // LOAD OBJ FILES
 //
 //
+
+// Get X,Y,Z scale of OBJ model (for collision detection)
+function getOBJSize(mesh){
+  var x = [];
+  var y = [];
+  var z = [];
+
+  for (var i = 0; i < mesh.vertices.length ; i++) {
+    if(i%3==0){
+      x.push(mesh.vertices[i]);
+    }else if(i%3==1){
+      y.push(mesh.vertices[i]);      
+    }else{
+      z.push(mesh.vertices[i]);
+      console.log()
+    }
+  }
+  var maxX = Math.max.apply(Math,x);
+  var minX = Math.min.apply(Math,x);
+
+  var maxY = Math.max.apply(Math,y);
+  var minY = Math.min.apply(Math,y);
+
+  var maxZ = Math.max.apply(Math,z);
+  var minZ = Math.min.apply(Math,z);
+  
+  return [Math.abs(maxX) + Math.abs(minX), Math.abs(maxY) + Math.abs(minY), Math.abs(maxZ) + Math.abs(minZ)]
+}
+
 function importOBJ(data){
   var mesh = new OBJ.Mesh(data);
   OBJ.initMeshBuffers(gl, mesh);
@@ -274,6 +319,8 @@ function loadSoldier() {
   request.onreadystatechange = function () {
     if (request.readyState == 4) {
       mesh = importOBJ(request.responseText);
+
+
     }
   }
   request.send();
@@ -389,7 +436,7 @@ function drawScene() {
 
 
   mat4.rotate(mvMatrix, degToRad(45), [1, 0, 0]);
-  mat4.translate(mvMatrix, [-xPosition, -6, -zPosition-3]);
+  mat4.translate(mvMatrix, [-xPosition, -20, -zPosition-15]);
 
   mvPushMatrix();
 
@@ -411,43 +458,40 @@ function drawScene() {
   // ^^^^^^^
   //  WORLD
   
-  // restore last location
-  mvPopMatrix();
-
-  // store current location
-  mvPushMatrix();
 
 
-  // OBJECTS
-  // vvvvvvv
 
-  mat4.translate(mvMatrix, [0, 0.4, -4]);
-  mat4.scale(mvMatrix, [0.7,0.7,0.7]);
-
-  drawOBJ(bomb,bombTexture);
+  for (var i = 0; i < meshes.length; i++) {
     // restore last location
-  mvPopMatrix();
+    mvPopMatrix();
 
-  mvPushMatrix();
+    // store current location
+    mvPushMatrix();
+
+    if (i==0) {
+      //soldier
+
+      mat4.translate(mvMatrix, meshes[i].position);
+      mat4.translate(mvMatrix, [xPosition, 0, zPosition-1.5]);
+      mat4.rotate(mvMatrix, degToRad(rotMouse), [0, -1, 0]);
+      drawOBJ(mesh,midTexture);
+
+    }else if(i==1){
+      //house
+
+      mat4.translate(mvMatrix, meshes[i].position);
+      drawOBJ(house,houseTexture);
+
+    }else{
+      //bomb
+      mat4.translate(mvMatrix, meshes[i].position);
+      drawOBJ(bomb,bombTexture);
+    }
+  }
 
 
-  mat4.scale(mvMatrix, [0.02,0.02,0.02]);
-  mat4.rotate(mvMatrix, degToRad(-90), [1, 0, 0]);
-  mat4.rotate(mvMatrix, degToRad(45), [0, 0, 1]);
 
-  // store current location
-  drawOBJ(house,houseTexture);
-
-    // restore last location
-  mvPopMatrix();
-
-  mvPushMatrix();
-  mat4.translate(mvMatrix, [xPosition, 0, zPosition-2]);
-
-  mat4.scale(mvMatrix, [0.2,0.2,0.2]);
-  mat4.rotate(mvMatrix, degToRad(rotMouse), [0, -1, 0]);
-
-  drawOBJ(mesh,midTexture);
+  
 
 
 
@@ -486,6 +530,7 @@ function drawOBJ(obj,texture){
 // Called every time before redeawing the screen.
 //
 function animate() {
+  
   var timeNow = new Date().getTime();
   if (lastTime != 0) {
     var elapsed = timeNow - lastTime;
@@ -498,9 +543,12 @@ function animate() {
       xPosition -= speedSide * elapsed;
     }
 
-
   }
   lastTime = timeNow;
+    
+
+  updateOimoPhysics();
+
 }
 
 //
@@ -529,20 +577,20 @@ function handleKeys() {
 
   if (currentlyPressedKeys[37] || currentlyPressedKeys[65]) {
     // Left cursor key or A
-    speedSide = 0.001;
+    speedSide = movingSpeed;
   } else if (currentlyPressedKeys[39] || currentlyPressedKeys[68]) {
     // Right cursor key or D
-    speedSide = -0.001;
+    speedSide = -movingSpeed;
   } else {
     speedSide = 0;
   }
 
   if (currentlyPressedKeys[38] || currentlyPressedKeys[87]) {
     // Up cursor key or W
-    speedForward = 0.001;
+    speedForward = movingSpeed;
   } else if (currentlyPressedKeys[40] || currentlyPressedKeys[83]) {
     // Down cursor key
-    speedForward = -0.001;
+    speedForward = -movingSpeed;
   } else {
     speedForward = 0;
   }
@@ -552,7 +600,7 @@ function handleKeys() {
 function mouseRotation(x,y){
   xx = x - (gl.viewportWidth/2);
   yy = y - (gl.viewportHeight/2);
-  rotMouse = angle(xx, yy, 0, 60);
+  rotMouse = angle(xx, yy, 0, 75);
 }
 //get angle
 function angle(a1, a2, b1, b2) {
@@ -566,6 +614,81 @@ function angle(a1, a2, b1, b2) {
 
 
 
+function initPhy(){
+  world = new OIMO.World({ 
+    timestep: 1/60, 
+    iterations: 8, 
+    broadphase: 2, // 1 brute force, 2 sweep and prune, 3 volume tree
+    worldscale: 5, // scale full world 
+    random: true,  // randomize sample
+    info: false,   // calculate statistic or not
+    gravity: [0,-9.8,0] 
+  });
+  populate();
+}
+
+var meshes = [];
+var meshesPositions = [];
+var bodys = [];
+var infos;
+function populate(){
+  
+  world.clear();
+  
+  var ground = world.add({size:[100, 1, 100], pos:[0,-1.5,0], move:false, world:world});
+  
+  //soldier
+  mesh.position = [0,0,0];
+  mesh.rotation = [0,0,0];
+  mesh.size = getOBJSize(mesh);
+  bodys[0] = world.add({type:'cylinder', size: mesh.size, pos:[0,1,0], move:true, world:world});
+  meshes[0] = mesh;
+
+  //house
+  house.position = [10,0,10];
+  house.rotation = [0,0,0];
+  house.size = getOBJSize(bomb); 
+  bodys[1] = world.add({type:'box', size: house.size, pos:house.position, move:false, world:world});
+  meshes[1] = house;
+
+  addBomb();
+}
+
+function addBomb(){
+    //house
+  var ibomb = bomb
+  ibomb.position = [10,0,0];
+  ibomb.rotation = [0,0,0];
+  ibomb.size = getOBJSize(ibomb);
+  bodys[bodys.length] = world.add({type:'sphere', size: ibomb.size, pos:ibomb.position, move:false, world:world});
+  meshes[meshes.length] = ibomb;
+  console.log("BOMBA");
+  console.log(ibomb);
+  return ibomb;
+}
+
+
+function updateOimoPhysics() {
+        if(world==null) return;
+
+        world.step();
+
+        var x, y, z, imesh, body, i = bodys.length;
+
+        while (i--){
+            body = bodys[i];
+            imesh = meshes[i];
+            imesh.position = [body.getPosition()["x"],body.getPosition()["y"],body.getPosition()["z"]];
+            imesh.rotation = [body.getQuaternion()["x"],body.getQuaternion()["y"],body.getQuaternion()["z"]];
+            console.log([body.getPosition()["x"],body.getPosition()["y"],body.getPosition()["z"]]);
+            if (i ==0){
+              //body.setPosition({x:xPosition, y:0, z:zPosition});
+              console.log(body.getPosition());
+            }
+        }
+        drawScene();
+        infos.innerHTML = world.getInfo();
+    }
 
 
 
@@ -581,7 +704,7 @@ function angle(a1, a2, b1, b2) {
 //
 function start() {
   canvas = document.getElementById("glcanvas");
-
+  infos = document.getElementById("info");
   //mouse movement listner
   canvas.addEventListener("mousemove", function(evt) {
       var xMouse = evt.offsetX || (evt.pageX - canvas.offsetLeft);
@@ -604,23 +727,26 @@ function start() {
     
     // Next, load and set up the textures we'll be using.
     initTextures();
-
     // Initialise world objects
     loadWorld();
     loadSoldier();
     loadBomb();
     loadHouse();
-    // Bind keyboard handling functions to document handlers
-    document.onkeydown = handleKeyDown;
-    document.onkeyup = handleKeyUp;
-    
-    // Set up to draw the scene periodically.
-    setInterval(function() {
-      if (texturesLoaded) { // only draw scene and animate when textures are loaded.
+
+  setTimeout(
+    function() 
+    {
+    initPhy();
+      console.log(getOBJSize(mesh));
+      // Bind keyboard handling functions to document handlers
+      document.onkeydown = handleKeyDown;
+      document.onkeyup = handleKeyUp;
+      
+      // Set up to draw the scene periodically.
+      setInterval(function() {
         requestAnimationFrame(animate);
         handleKeys();
-        drawScene();
-      }
-    }, 15);
+      }, 1000/60);
+    }, 500);
   }
 }

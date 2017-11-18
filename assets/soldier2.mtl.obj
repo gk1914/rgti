@@ -1,6 +1,6 @@
 # Blender v2.78 (sub 0) OBJ File: 'soldier.blend'
 # www.blender.org
-mtllib soldier.mtl
+mtllib soldier2.mtl.mtl
 o Bomb
 v -0.014048 2.502522 0.002453
 v -0.010449 2.471671 0.008541

@@ -31,3 +31,7 @@ td {
 	font-size:2em;
 	color: white;
 }
+
+#glcanvas{
+	cursor: crosshair;
+}
