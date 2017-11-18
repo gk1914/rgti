@@ -8,6 +8,7 @@ var worldVertexPositionBuffer = null;
 var worldVertexTextureCoordBuffer = null;
 var mesh = null;
 var bomb = null;
+var house = null;
 var bombList = [];
 // Model-view and projection matrix and model-view matrix stack
 var mvMatrixStack = [];
@@ -15,8 +16,10 @@ var mvMatrix = mat4.create();
 var pMatrix = mat4.create();
 
 // Variables for storing textures
-var wallTexture;
-var midTexture;
+var wallTexture = null;
+var midTexture = null;
+var bombTexture = null;
+var houseTexture = null;
 // Variable that stores  loading state of textures.
 var texturesLoaded = false;
 
@@ -198,37 +201,6 @@ function setMatrixUniforms() {
 // the texture images. The handleTextureLoaded() callback will finish
 // the job; it gets called each time a texture finishes loading.
 //
-function initTextures() {
-  wallTexture = gl.createTexture();
-  wallTexture.image = new Image();
-  wallTexture.image.onload = function () {
-    handleTextureLoaded(wallTexture)
-  }
-  wallTexture.image.src = "./assets/wall.png";
-
-  midTexture = gl.createTexture();
-  midTexture.image = new Image();
-  midTexture.image.onload = function () {
-    handleTextureLoaded(midTexture)
-  }
-  midTexture.image.src = "./assets/textureJPG.jpg";
-}
-
-function handleTextureLoaded(texture) {
-  gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
-
-  // Third texture usus Linear interpolation approximation with nearest Mipmap selection
-  gl.bindTexture(gl.TEXTURE_2D, texture);
-  gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, texture.image);
-  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-  gl.generateMipmap(gl.TEXTURE_2D);
-
-  gl.bindTexture(gl.TEXTURE_2D, null);
-
-  // when texture loading is finished we can draw scene.
-  texturesLoaded = true;
-}
 
 //
 // handleLoadedWorld
@@ -272,17 +244,19 @@ function handleLoadedWorld(data) {
 }
 
 
+
+
+
+//
+// 
+// LOAD OBJ FILES
+//
+//
 function importOBJ(data){
   var mesh = new OBJ.Mesh(data);
   OBJ.initMeshBuffers(gl, mesh);
   return mesh
 }
-
-//
-// loadWorld
-//
-// Loading world 
-//
 function loadWorld() {
   var request = new XMLHttpRequest();
   request.open("GET", "./assets/world.txt");
@@ -307,7 +281,7 @@ function loadSoldier() {
 
 function loadBomb() {
   var request = new XMLHttpRequest();
-  request.open("GET", "./assets/soldier2.obj");
+  request.open("GET", "./assets/bomb.obj");
   request.onreadystatechange = function () {
     if (request.readyState == 4) {
       bomb = importOBJ(request.responseText);
@@ -316,7 +290,72 @@ function loadBomb() {
   request.send();
 }
 
+function loadHouse() {
+  var request = new XMLHttpRequest();
+  request.open("GET", "./assets/farmhouse.obj");
+  request.onreadystatechange = function () {
+    if (request.readyState == 4) {
+      house = importOBJ(request.responseText);
+    }
+  }
+  request.send();
+}
 
+//
+// 
+//
+// 
+// LOAD TEXTURES
+//
+//
+function initTextures() {
+  wallTexture = gl.createTexture();
+  wallTexture.image = new Image();
+  wallTexture.image.onload = function () {
+    handleTextureLoaded(wallTexture)
+  }
+  wallTexture.image.src = "./assets/wall.png";
+
+  midTexture = gl.createTexture();
+  midTexture.image = new Image();
+  midTexture.image.onload = function () {
+    handleTextureLoaded(midTexture)
+  }
+  midTexture.image.src = "./assets/textureJPG.jpg";
+
+  bombTexture = gl.createTexture();
+  bombTexture.image = new Image();
+  bombTexture.image.onload = function () {
+    handleTextureLoaded(bombTexture)
+  }
+  bombTexture.image.src = "./assets/bombtext.png";
+
+  houseTexture = gl.createTexture();
+  houseTexture.image = new Image();
+  houseTexture.image.onload = function () {
+    handleTextureLoaded(houseTexture)
+  }
+  houseTexture.image.src = "./assets/farmhouseT.jpg";
+}
+
+function handleTextureLoaded(texture) {
+  gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
+
+  // Third texture usus Linear interpolation approximation with nearest Mipmap selection
+  gl.bindTexture(gl.TEXTURE_2D, texture);
+  gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, texture.image);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+  gl.generateMipmap(gl.TEXTURE_2D);
+
+  gl.bindTexture(gl.TEXTURE_2D, null);
+
+  // when texture loading is finished we can draw scene.
+  texturesLoaded = true;
+}
+
+//
+// 
 
 //
 // drawScene
@@ -346,59 +385,99 @@ function drawScene() {
 
   // Now move the drawing position a bit to where we want to start
   // drawing the world.
+
+
+
   mat4.rotate(mvMatrix, degToRad(45), [1, 0, 0]);
-  mat4.translate(mvMatrix, [0,0,-3]);
-  mat4.translate(mvMatrix, [-xPosition, -yPosition, -zPosition]);
-  // Activate textures
+  mat4.translate(mvMatrix, [-xPosition, -6, -zPosition-3]);
+
+  mvPushMatrix();
+
   gl.activeTexture(gl.TEXTURE0);
   gl.bindTexture(gl.TEXTURE_2D, wallTexture);
   
   gl.uniform1i(shaderProgram.samplerUniform, 0);
-  // Set the texture coordinates attribute for the vertices.
   gl.bindBuffer(gl.ARRAY_BUFFER, worldVertexTextureCoordBuffer);
   gl.vertexAttribPointer(shaderProgram.textureCoordAttribute, worldVertexTextureCoordBuffer.itemSize, gl.FLOAT, false, 0, 0);
 
-  // Draw the world by binding the array buffer to the world's vertices
-  // array, setting attributes, and pushing it to GL.
+  
   gl.bindBuffer(gl.ARRAY_BUFFER, worldVertexPositionBuffer);
   gl.vertexAttribPointer(shaderProgram.vertexPositionAttribute, worldVertexPositionBuffer.itemSize, gl.FLOAT, false, 0, 0);
 
 
-  // Draw the cube.
   setMatrixUniforms();
   gl.drawArrays(gl.TRIANGLES, 0, worldVertexPositionBuffer.numItems);
  
+  // ^^^^^^^
+  //  WORLD
+  
+  // restore last location
+  mvPopMatrix();
 
-  mat4.translate(mvMatrix, [xPosition, 0, zPosition]);
+  // store current location
+  mvPushMatrix();
+
+
+  // OBJECTS
+  // vvvvvvv
+
+  mat4.translate(mvMatrix, [0, 0.4, -4]);
+  mat4.scale(mvMatrix, [0.7,0.7,0.7]);
+
+  drawOBJ(bomb,bombTexture);
+    // restore last location
+  mvPopMatrix();
+
+  mvPushMatrix();
+
+
+  mat4.scale(mvMatrix, [0.02,0.02,0.02]);
+  mat4.rotate(mvMatrix, degToRad(-90), [1, 0, 0]);
+  mat4.rotate(mvMatrix, degToRad(45), [0, 0, 1]);
+
+  // store current location
+  drawOBJ(house,houseTexture);
+
+    // restore last location
+  mvPopMatrix();
+
+  mvPushMatrix();
+  mat4.translate(mvMatrix, [xPosition, 0, zPosition-2]);
+
   mat4.scale(mvMatrix, [0.2,0.2,0.2]);
   mat4.rotate(mvMatrix, degToRad(rotMouse), [0, -1, 0]);
 
+  drawOBJ(mesh,midTexture);
 
 
 
-  //draw mid
-  gl.bindBuffer(gl.ARRAY_BUFFER, mesh.vertexBuffer);
-  gl.vertexAttribPointer(shaderProgram.vertexPositionAttribute, mesh.vertexBuffer.itemSize, gl.FLOAT, false, 0, 0);
-
-  gl.bindBuffer(gl.ARRAY_BUFFER, mesh.textureBuffer);
-  gl.vertexAttribPointer(shaderProgram.textureCoordAttribute, mesh.textureBuffer.itemSize, gl.FLOAT, false, 0, 0);
-
-
-  gl.activeTexture(gl.TEXTURE0);
-  gl.bindTexture(gl.TEXTURE_2D, midTexture);
-
-  gl.uniform1i(shaderProgram.samplerUniform, 0);
-
-
-  gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, mesh.indexBuffer);
-  setMatrixUniforms();
-
-  gl.drawElements(gl.TRIANGLES, mesh.indexBuffer.numItems, gl.UNSIGNED_SHORT, 0);
 
 }
 
 
+function drawOBJ(obj,texture){
 
+  // Draw the world by binding the array buffer to the world's vertices
+  // array, setting attributes, and pushing it to GL.
+  gl.bindBuffer(gl.ARRAY_BUFFER, obj.vertexBuffer);
+  gl.vertexAttribPointer(shaderProgram.vertexPositionAttribute, obj.vertexBuffer.itemSize, gl.FLOAT, false, 0, 0);
+
+  // Set the texture coordinates attribute for the vertices.
+  gl.bindBuffer(gl.ARRAY_BUFFER, obj.textureBuffer);
+  gl.vertexAttribPointer(shaderProgram.textureCoordAttribute, obj.textureBuffer.itemSize, gl.FLOAT, false, 0, 0);
+
+  // Activate textures
+  gl.activeTexture(gl.TEXTURE0);
+  gl.bindTexture(gl.TEXTURE_2D, texture);
+
+  gl.uniform1i(shaderProgram.samplerUniform, 0);
+
+
+  gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, obj.indexBuffer);
+  setMatrixUniforms();
+
+  gl.drawElements(gl.TRIANGLES, obj.indexBuffer.numItems, gl.UNSIGNED_SHORT, 0);
+}
 
 
 //
@@ -473,7 +552,7 @@ function handleKeys() {
 function mouseRotation(x,y){
   xx = x - (gl.viewportWidth/2);
   yy = y - (gl.viewportHeight/2);
-  rotMouse = angle(xx, yy, 0, 0);
+  rotMouse = angle(xx, yy, 0, 60);
 }
 //get angle
 function angle(a1, a2, b1, b2) {
@@ -485,11 +564,6 @@ function angle(a1, a2, b1, b2) {
 }
 
 
-
-function spawnBomb(){
-
-
-}
 
 
 
@@ -534,6 +608,8 @@ function start() {
     // Initialise world objects
     loadWorld();
     loadSoldier();
+    loadBomb();
+    loadHouse();
     // Bind keyboard handling functions to document handlers
     document.onkeydown = handleKeyDown;
     document.onkeyup = handleKeyUp;
