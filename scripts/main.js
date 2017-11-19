@@ -657,16 +657,36 @@ function addBomb(){
 
 
 function updateOimoPhysics() {
-        var imesh, bodyMY, moveX, moveZ, i = bodysMY.length;
+        var collision, imesh, bodyMY, moveX, moveZ, i = bodysMY.length;
         while (i--){
             bodyMY = bodysMY[i];
             imesh = meshes[i];
             
             if (i == 0){
+                  console.log(zPosition);
+
               var io = new OBJmodel(bodysMY[0].size,bodysMY[0].position,"");
               io.setPosition([imesh.position[0]+xPosition,imesh.position[1],imesh.position[2]+zPosition]);
-              if(io.detectCollision(bodysMY[1])){
+              collision = io.detectCollision(bodysMY[1]);
+              if(typeof collision === 'string'){
                 isCollision = true;
+                console.log("insideee");
+                if (collision == "top"){
+                  bodysMY[0].setPosition([imesh.position[0]+xPosition,imesh.position[1],bodysMY[1].minZ-1]);
+                  zPosition = bodysMY[1].minZ-1;                
+                } else if (collision == "down"){
+                  bodysMY[0].setPosition([imesh.position[0]+xPosition,imesh.position[1],bodysMY[1].maxZ+1]);
+                  zPosition = bodysMY[1].maxZ+1;                
+                }else if (collision == "left"){
+                  bodysMY[0].setPosition([bodysMY[1].minX-1,imesh.position[1],imesh.position[2]+zPosition]);
+                  xPosition = bodysMY[1].minX-1;                
+                }else if (collision == "right"){
+                  bodysMY[0].setPosition([bodysMY[1].maxX+1,imesh.position[1],imesh.position[2]+zPosition]);
+                  xPosition = bodysMY[1].maxX+1;      
+                }
+
+
+
 
               }else{
                 //console.log(xPosition);

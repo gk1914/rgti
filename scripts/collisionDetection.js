@@ -20,10 +20,10 @@ function OBJmodel(size, position, name) {
 		if ((this.minX <= b.maxX && this.maxX >= b.minX) &&
          (this.minY <= b.maxY && this.maxY >= b.minY) &&
          (this.minZ <= b.maxZ && this.maxZ >= b.minZ)){
-			this.getSide(b);
-			return true;
+			
+			return this.getSide(b);
 		}
-		return false;
+		return;
     };
 
 
