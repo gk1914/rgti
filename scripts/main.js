@@ -4,8 +4,6 @@ var gl;
 var shaderProgram;
 
 
-// 3d physics engine
-var world;
 
 // Buffers
 var worldVertexPositionBuffer = null;
@@ -52,7 +50,7 @@ var spawnPosition = [1,0,0];
 var lastTime = 0;
 
 
-
+var isCollision = false;
 
 // Moving bombs
 
@@ -436,8 +434,11 @@ function drawScene() {
 
 
   mat4.rotate(mvMatrix, degToRad(45), [1, 0, 0]);
-  mat4.translate(mvMatrix, [-xPosition, -20, -zPosition-15]);
-
+  if(isCollision){
+    mat4.translate(mvMatrix, [-bodysMY[0].position[0], -20, -bodysMY[0].position[2]-15]);
+  }else{
+    mat4.translate(mvMatrix, [-xPosition, -20, -zPosition-15]);
+  }
   mvPushMatrix();
 
   gl.activeTexture(gl.TEXTURE0);
@@ -471,8 +472,8 @@ function drawScene() {
     if (i==0) {
       //soldier
 
-      mat4.translate(mvMatrix, meshes[i].position);
-      mat4.translate(mvMatrix, [xPosition, 0, zPosition-1.5]);
+      //mat4.translate(mvMatrix, meshes[i].position);
+      mat4.translate(mvMatrix, [bodysMY[i].position[0], bodysMY[i].position[1], bodysMY[i].position[2]-1.5]);
       mat4.rotate(mvMatrix, degToRad(rotMouse), [0, -1, 0]);
       drawOBJ(mesh,midTexture);
 
@@ -488,13 +489,6 @@ function drawScene() {
       drawOBJ(bomb,bombTexture);
     }
   }
-
-
-
-  
-
-
-
 
 }
 
@@ -544,6 +538,7 @@ function animate() {
     }
 
   }
+  //console.log(xPosition);
   lastTime = timeNow;
     
 
@@ -615,41 +610,35 @@ function angle(a1, a2, b1, b2) {
 
 
 function initPhy(){
-  world = new OIMO.World({ 
-    timestep: 1/60, 
-    iterations: 8, 
-    broadphase: 2, // 1 brute force, 2 sweep and prune, 3 volume tree
-    worldscale: 5, // scale full world 
-    random: true,  // randomize sample
-    info: false,   // calculate statistic or not
-    gravity: [0,-9.8,0] 
-  });
+
   populate();
 }
 
 var meshes = [];
 var meshesPositions = [];
-var bodys = [];
+var bodysMY = [];
 var infos;
+
 function populate(){
   
-  world.clear();
   
-  var ground = world.add({size:[100, 1, 100], pos:[0,-1.5,0], move:false, world:world});
   
   //soldier
   mesh.position = [0,0,0];
   mesh.rotation = [0,0,0];
   mesh.size = getOBJSize(mesh);
-  bodys[0] = world.add({type:'cylinder', size: mesh.size, pos:[0,1,0], move:true, world:world});
   meshes[0] = mesh;
+
+  bodysMY[0] = new OBJmodel(mesh.size, mesh.position, "soldier");
 
   //house
   house.position = [10,0,10];
   house.rotation = [0,0,0];
-  house.size = getOBJSize(bomb); 
-  bodys[1] = world.add({type:'box', size: house.size, pos:house.position, move:false, world:world});
+  house.size = getOBJSize(house); 
   meshes[1] = house;
+
+  bodysMY[1] = new OBJmodel(house.size, house.position, "house");
+
 
   addBomb();
 }
@@ -660,34 +649,37 @@ function addBomb(){
   ibomb.position = [10,0,0];
   ibomb.rotation = [0,0,0];
   ibomb.size = getOBJSize(ibomb);
-  bodys[bodys.length] = world.add({type:'sphere', size: ibomb.size, pos:ibomb.position, move:false, world:world});
   meshes[meshes.length] = ibomb;
-  console.log("BOMBA");
-  console.log(ibomb);
+  bodysMY[bodysMY.length] = new OBJmodel(ibomb.size, ibomb.position, "bomb");
+
   return ibomb;
 }
 
 
 function updateOimoPhysics() {
-        if(world==null) return;
-
-        world.step();
-
-        var x, y, z, imesh, body, i = bodys.length;
-
+        var imesh, bodyMY, moveX, moveZ, i = bodysMY.length;
         while (i--){
-            body = bodys[i];
+            bodyMY = bodysMY[i];
             imesh = meshes[i];
-            imesh.position = [body.getPosition()["x"],body.getPosition()["y"],body.getPosition()["z"]];
-            imesh.rotation = [body.getQuaternion()["x"],body.getQuaternion()["y"],body.getQuaternion()["z"]];
-            console.log([body.getPosition()["x"],body.getPosition()["y"],body.getPosition()["z"]]);
-            if (i ==0){
-              //body.setPosition({x:xPosition, y:0, z:zPosition});
-              console.log(body.getPosition());
+            
+            if (i == 0){
+              var io = new OBJmodel(bodysMY[0].size,bodysMY[0].position,"");
+              io.setPosition([imesh.position[0]+xPosition,imesh.position[1],imesh.position[2]+zPosition]);
+              if(io.detectCollision(bodysMY[1])){
+                isCollision = true;
+
+              }else{
+                //console.log(xPosition);
+
+                isCollision = false;
+                bodysMY[0].setPosition([imesh.position[0]+xPosition,imesh.position[1],imesh.position[2]+zPosition]);                
+              }
+            }else if(i == 1){
+              //bodysMY[1] = bodyMY;
+
             }
         }
         drawScene();
-        infos.innerHTML = world.getInfo();
     }
 
 
@@ -737,7 +729,7 @@ function start() {
     function() 
     {
     initPhy();
-      console.log(getOBJSize(mesh));
+      //console.log(getOBJSize(mesh));
       // Bind keyboard handling functions to document handlers
       document.onkeydown = handleKeyDown;
       document.onkeyup = handleKeyUp;
