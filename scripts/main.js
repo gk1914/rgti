@@ -672,17 +672,17 @@ function updateOimoPhysics() {
                 isCollision = true;
                 console.log("insideee");
                 if (collision == "top"){
-                  bodysMY[0].setPosition([imesh.position[0]+xPosition,imesh.position[1],bodysMY[1].minZ-1]);
-                  zPosition = bodysMY[1].minZ-1;                
+                  bodysMY[0].setPosition([imesh.position[0]+xPosition,imesh.position[1],bodysMY[1].minZ-0.7]);
+                  zPosition = bodysMY[1].minZ-0.7;                
                 } else if (collision == "down"){
-                  bodysMY[0].setPosition([imesh.position[0]+xPosition,imesh.position[1],bodysMY[1].maxZ+1]);
-                  zPosition = bodysMY[1].maxZ+1;                
+                  bodysMY[0].setPosition([imesh.position[0]+xPosition,imesh.position[1],bodysMY[1].maxZ+0.7]);
+                  zPosition = bodysMY[1].maxZ+0.7;                
                 }else if (collision == "left"){
-                  bodysMY[0].setPosition([bodysMY[1].minX-1,imesh.position[1],imesh.position[2]+zPosition]);
-                  xPosition = bodysMY[1].minX-1;                
+                  bodysMY[0].setPosition([bodysMY[1].minX-0.5,imesh.position[1],imesh.position[2]+zPosition]);
+                  xPosition = bodysMY[1].minX-0.5;                
                 }else if (collision == "right"){
-                  bodysMY[0].setPosition([bodysMY[1].maxX+1,imesh.position[1],imesh.position[2]+zPosition]);
-                  xPosition = bodysMY[1].maxX+1;      
+                  bodysMY[0].setPosition([bodysMY[1].maxX+0.5,imesh.position[1],imesh.position[2]+zPosition]);
+                  xPosition = bodysMY[1].maxX+0.5;      
                 }
 
 
