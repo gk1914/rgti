@@ -57,11 +57,11 @@ var isCollision = false;
 var fire=false;
 var lastFire = 0;
 var fireCooldown = 1500;
-var bulletLifetime = 750;
+var bulletLifetime = 1000;
 var xBulletPositionPosition;
 var zBPositionPosition;
 var bulletRot;
-var bulletSpeed = 0.1;
+var bulletSpeed = 0.3;
 
 //
 // Moving bombs
@@ -70,12 +70,17 @@ var bombSize;
 var bombResponseText;
 
 var lastSpawn = 0;
-var spawnInterval = 2000;
+var spawnInterval = 5000;
 var bombSpawnPoints = [
 	[10,0,0],
-	[10,0,-2],
-	[10,0,-4],
-	[10,0,-6]];
+	[-10,0,0],
+	[5,0,-10],
+	[-5,0,-10]];
+var bombMoveProgram = [
+	[[8,0], [6, 0], [14, 0], [2, 0]],
+	[[-8,0], [-6, 0], [-14, 0], [-2, 0]],
+	[[4, -8], [3, -6], [12, -4], [1, -2]],
+	[[-4, -8], [-3, -6], [-12, -4], [-1, -2]]];
 
 
 
@@ -517,7 +522,7 @@ function drawScene() {
   
   // draw bullet 
   if (fire) {
-    console.log("FIRE");
+    //console.log("FIRE");
     mvPopMatrix();
     mvPushMatrix();
     mat4.translate(mvMatrix, [xBulletPosition, 2.25, zBulletPosition-1.5]);
@@ -575,12 +580,13 @@ function animate() {
     }
     
     // bombs
-  	if (timeNow - lastSpawn > spawnInterval) {
-	  	if (lastSpawn != 0) 
-		  	spawnBombs();
-		  lastSpawn = timeNow;
-	  }
-	  animateBombs(elapsed);
+    if (timeNow - lastSpawn > spawnInterval) {
+	if (lastSpawn != 0) 
+	  spawnBombs();
+	  lastSpawn = timeNow;
+    }
+    updateBombDirection();
+    animateBombs(elapsed);
 	
 	  // bullet
 	  if (fire) {
@@ -603,8 +609,9 @@ function animate() {
 }
 
 function animateBombs(elapsed) {
-	for (var i = 3; i < meshes.length; i++) {
-		meshes[i].position[0] -= bombSpeed * elapsed;
+	for (var i = 0; i < bombList.length; i++) {
+		bombList[i].position[0] += bombSpeed * elapsed * bombList[i].direction[0];
+		bombList[i].position[2] += bombSpeed * elapsed * bombList[i].direction[1];
 	}
 }
 
@@ -617,6 +624,8 @@ function spawnBombs() {
   bombList[tempIdx].position = bombSpawnPoints[spawnIndex].slice();
   bombList[tempIdx].rotation = [0,0,0];
   bombList[tempIdx].size = bombSize;
+  bombList[tempIdx].program = bombMoveProgram[spawnIndex];
+  bombList[tempIdx].currStep = 0;
   meshes[meshes.length] = bombList[tempIdx];
   bodysMY[bodysMY.length] = new OBJmodel(bombList[tempIdx].size, bombList[tempIdx].position, "bomb");
 }
@@ -629,6 +638,41 @@ function getSpawnIndex() {
 function destroyBomb(i) {
   bombList.splice(i,1);
   meshes.splice(i+2,1);
+}
+
+// Update the direction of bombs (called every .... seconds)
+function updateBombDirection() {
+	for (var i = 2; i < meshes.length; i++) {
+		//meshes[i].direction = moveBomb([meshes[i].position[0], meshes[i].position[2]], [0, 0]);
+		var curr = meshes[i];
+		meshes[i].direction = moveBomb([meshes[i].position[0], meshes[i].position[2]], curr.program[curr.currStep])
+		
+		var distToNextStep = distance([curr.position[0], curr.position[2]], curr.program[curr.currStep]);
+		if (distToNextStep < 0.25)
+			meshes[i].currStep++;
+		if (meshes[i].currStep >= 4)
+			destroyBomb(i-2);
+	}
+}
+//Function for moving bomb from point a to point b
+function moveBomb(p1, p2) {
+	var x1 = p1[0];
+	var x2 = p2[0];
+	var y1 = p1[1];
+	var y2 = p2[1];
+	var dir = [(x2-x1), (y2-y1)];
+	var dist = distance(p1, p2);
+	var moveVector= [dir[0]/dist, dir[1]/dist];
+	return moveVector;
+}
+
+// Helper: get distance between point p1 and p2
+function distance(p1, p2) {
+	var x1 = p1[0];
+	var x2 = p2[0];
+	var y1 = p1[1];
+	var y2 = p2[1];
+	return Math.sqrt((x1-x2)*(x1-x2) + (y1-y2)*(y1-y2));
 }
 
 
@@ -729,7 +773,7 @@ function populate() {
   bodysMY[1] = new OBJmodel(house.size, house.position, "house");
 
 
-  addBomb();
+  //addBomb();
 }
 
 function addBomb(){
