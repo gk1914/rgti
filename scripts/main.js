@@ -684,19 +684,45 @@ function drawOBJ(obj,texture){
 //
 // Called every time before redeawing the screen.
 //
+
+
 function animate() {
   
+  var currentX = xPosition;
+  var currentZ = zPosition;
+
+  var clickedX = false;
+  var clickedZ = false;
+
   var timeNow = new Date().getTime();
   if (lastTime != 0) {
     var elapsed = timeNow - lastTime;
 
     if (speedForward != 0) {
       zPosition -= speedForward * elapsed;
+      clickedZ == true;
     }
 
     if (speedSide != 0) {
       xPosition -= speedSide * elapsed;
-    } 
+      clickedX == true;
+    }
+
+    var io = new OBJmodel(bodysMY[0].size,bodysMY[0].position,"");
+    io.setPosition([meshes[0].position[0]+xPosition,meshes[0].position[1],meshes[0].position[2]+zPosition]);
+    collision = io.detectCollision(bodysMY[1]);
+    if(collision != null){
+      if (speedForward != 0 && speedSide != 0) {
+        zPosition = currentZ;
+        xPosition = currentX;
+      }else if(speedForward != 0){
+        zPosition = currentZ;        
+      }else{
+        xPosition = currentX;
+      }
+    }
+    bodysMY[0].setPosition([xPosition,bodysMY[0].position[1],zPosition]);
+
   }
   lastTime = timeNow;
   
@@ -954,40 +980,7 @@ function updateOimoPhysics() {
             imesh = meshes[i];
             
             if (i == 0){
-                  //console.log(zPosition);
-
-              var io = new OBJmodel(bodysMY[0].size,bodysMY[0].position,"");
-              io.setPosition([imesh.position[0]+xPosition,imesh.position[1],imesh.position[2]+zPosition]);
-              collision = io.detectCollision(bodysMY[1]);
-              if(typeof collision === 'string'){
-                isCollision = true;
-                console.log("insideee");
-                if (collision == "top"){
-                  bodysMY[0].setPosition([imesh.position[0]+xPosition,imesh.position[1],bodysMY[1].minZ-0.7]);
-                  zPosition = bodysMY[1].minZ-0.7;                
-                } else if (collision == "down"){
-                  bodysMY[0].setPosition([imesh.position[0]+xPosition,imesh.position[1],bodysMY[1].maxZ+0.7]);
-                  zPosition = bodysMY[1].maxZ+0.7;                
-                }else if (collision == "left"){
-                  bodysMY[0].setPosition([bodysMY[1].minX-0.5,imesh.position[1],imesh.position[2]+zPosition]);
-                  xPosition = bodysMY[1].minX-0.5;                
-                }else if (collision == "right"){
-                  bodysMY[0].setPosition([bodysMY[1].maxX+0.5,imesh.position[1],imesh.position[2]+zPosition]);
-                  xPosition = bodysMY[1].maxX+0.5;      
-                }
-
-
-
-
-              }else{
-                //console.log(xPosition);
-
-                isCollision = false;
                 bodysMY[0].setPosition([imesh.position[0]+xPosition,imesh.position[1],imesh.position[2]+zPosition]);                
-              }
-            }else if(i == 1){
-              //bodysMY[1] = bodyMY;
-
             }
         }
         drawScene();
