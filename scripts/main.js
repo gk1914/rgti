@@ -87,7 +87,17 @@ var bombMoveProgram = [
 	[[-8,0], [-6, 0], [-14, 0], [-2, 0]],
 	[[4, -8], [3, -6], [12, -4], [1, -2]],
 	[[-4, -8], [-3, -6], [-12, -4], [-1, -2]]];
-
+	
+//
+// Ammo
+var lastAmmoPickup = 0;
+var ammoSpawnInterval = 10000;
+var ammoActive = true;
+var ammoSpawnPoints = [
+	[15,0,-5],
+	[-10,0,0],
+	[5,0,-12],
+	[-5,0,-10]];
 
 
 //
@@ -579,13 +589,14 @@ function drawScene() {
   }
   
   // draw ammo
-    //console.log("FIRE");
-    mvPopMatrix();
+  if (ammoActive) {
+	mvPopMatrix();
     mvPushMatrix();
-    mat4.translate(mvMatrix, [0, 0.0, 0]);
+    mat4.translate(mvMatrix, ammo.position);
 
     drawOBJ(ammo,ammoTexture);
-
+  }
+  
 }
 
 
@@ -631,31 +642,43 @@ function animate() {
 
     if (speedSide != 0) {
       xPosition -= speedSide * elapsed;
-    }
-    
-    // bombs
-    if (timeNow - lastSpawn > spawnInterval) {
-	if (lastSpawn != 0) 
-	  spawnBombs();
-	  lastSpawn = timeNow;
-    }
-    updateBombDirection();
-    animateBombs(elapsed);
-	
-	  // bullet
-	  if (fire) {
-		  var angle = degToRad(bulletMesh.bulletRot);
-		  bulletMesh.xBulletPosition -= Math.sin(angle)*bulletSpeed;
-		  bulletMesh.zBulletPosition -= Math.cos(angle)*(-bulletSpeed);
-	  }
-	  if (timeNow - lastFire > bulletLifetime)
-	  {
-	    fire = false;
-	  }
+    } 
+  }
+  lastTime = timeNow;
+  
+  // ammo
+  if (!ammoActive && timeNow - lastAmmoPickup > ammoSpawnInterval) {
+	spawnAmmo();
+	console.log("spanw ammo");  
+  }
+  if (ammoActive && distance([xPosition, zPosition-1.5], [ammo.position[0], ammo.position[2]]) < 1) {
+	  console.log("sdhsgh");
+	lastAmmoPickup = timeNow;
+    ammoCount += 5;
+	document.getElementById("ammo-count").innerHTML = ammoCount;
+	ammoActive = false;
   }
   
-  //console.log(xPosition);
-  lastTime = timeNow;
+  // bombs
+  if (timeNow - lastSpawn > spawnInterval) {
+  if (lastSpawn != 0) 
+	spawnBombs();
+	lastSpawn = timeNow;
+  }
+  updateBombDirection();
+  animateBombs(elapsed);
+	
+  // bullet
+  if (fire) {
+	var angle = degToRad(bulletMesh.bulletRot);
+	bulletMesh.xBulletPosition -= Math.sin(angle)*bulletSpeed;
+	bulletMesh.zBulletPosition -= Math.cos(angle)*(-bulletSpeed);
+  }
+  if (timeNow - lastFire > bulletLifetime)
+  {
+	fire = false;
+  }
+  
     
 
   updateOimoPhysics();
@@ -672,7 +695,7 @@ function animateBombs(elapsed) {
 //
 // Function for spawning bombs and a helper function for randomizing spawn point
 function spawnBombs() {
-  spawnIndex = getSpawnIndex();
+  spawnIndex = getSpawnIndex(bombSpawnPoints.length);
   bombList.push(importOBJ(bombResponseText));
   var tempIdx = bombList.length-1;
   bombList[tempIdx].position = bombSpawnPoints[spawnIndex].slice();
@@ -684,8 +707,8 @@ function spawnBombs() {
   bodysMY[bodysMY.length] = new OBJmodel(bombList[tempIdx].size, bombList[tempIdx].position, "bomb");
 }
 
-function getSpawnIndex() {
-  return Math.floor(Math.random() * bombSpawnPoints.length);
+function getSpawnIndex(upTo) {
+  return Math.floor(Math.random() * upTo);
 }
 
 // Destroy bomb at index i
@@ -826,6 +849,11 @@ function populate() {
 
   bodysMY[1] = new OBJmodel(house.size, house.position, "house");
 
+  // ammo
+  ammo.position = [10,0,-5];
+  ammo.rotation = [0,0,0];
+  ammo.size = getOBJSize(ammo);
+  //meshes[]...
 
   //addBomb();
 }
@@ -854,6 +882,14 @@ function addBomb(){
   console.log(meshes.length);*/
 
   return ibomb;
+}
+
+// Add new ammo crate
+function spawnAmmo() {
+  var spawnIndex = getSpawnIndex(ammoSpawnPoints.length);
+  ammo.position[0] = ammoSpawnPoints[spawnIndex][0];
+  ammo.position[1] = ammoSpawnPoints[spawnIndex][1];
+  ammoActive = true;
 }
 
 
