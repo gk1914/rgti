@@ -12,6 +12,7 @@ var mesh = null;
 var bomb = null;
 var house = null;
 var ammo;
+var bulletMesh;
 var bombList = [];
 // Model-view and projection matrix and model-view matrix stack
 var mvMatrixStack = [];
@@ -24,6 +25,8 @@ var midTexture = null;
 var bombTexture = null;
 var houseTexture = null;
 var ammoTexture = null;
+var bulletTexture = null;
+
 // Variable that stores  loading state of textures.
 var texturesLoaded = false;
 
@@ -61,11 +64,11 @@ var lastFire = 0;
 var ammoCount = 5;
 var fireCooldown = 1500;
 var bulletLifetime = 1000;
-var xBulletPositionPosition;
-var zBPositionPosition;
+var xBulletPosition;
+var zBulletPosition;
 var bulletRot;
 var bulletSpeed = 0.3;
-
+var bullet;
 //
 // Moving bombs
 var bombSpeed = 0.005;
@@ -309,7 +312,6 @@ function getOBJSize(mesh){
       y.push(mesh.vertices[i]);      
     }else{
       z.push(mesh.vertices[i]);
-      console.log()
     }
   }
   var maxX = Math.max.apply(Math,x);
@@ -390,6 +392,18 @@ function loadAmmo() {
   request.send();
 }
 
+function loadBullet() {
+  var request = new XMLHttpRequest();
+  request.open("GET", "./assets/Bullet.obj");
+  request.onreadystatechange = function () {
+    if (request.readyState == 4) {
+      bulletMesh = importOBJ(request.responseText);
+    }
+  }
+  request.send();
+}
+
+
 //
 // 
 //
@@ -432,7 +446,18 @@ function initTextures() {
     handleTextureLoaded(ammoTexture)
   }
   ammoTexture.image.src = "./assets/D.png";
+
+  bulletTexture = gl.createTexture();
+  bulletTexture.image = new Image();
+  bulletTexture.image.onload = function () {
+    handleTextureLoaded(bulletTexture)
+  }
+  bulletTexture.image.src = "./assets/Bullet_Texture.jpg";
+
 }
+
+
+
 
 function handleTextureLoaded(texture) {
   gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
@@ -546,11 +571,11 @@ function drawScene() {
     //console.log("FIRE");
     mvPopMatrix();
     mvPushMatrix();
-    mat4.translate(mvMatrix, [xBulletPosition, 2.25, zBulletPosition-1.5]);
-    mat4.scale(mvMatrix, [0.05,0.05,0.05]);
-    mat4.rotate(mvMatrix, degToRad(bulletRot+90), [0, -1, 0]);
+    mat4.translate(mvMatrix, [bulletMesh.xBulletPosition, 2.25, bulletMesh.zBulletPosition-1.5]);
+    mat4.scale(mvMatrix, [0.2,0.2,0.2]);
+    mat4.rotate(mvMatrix, degToRad(bulletMesh.bulletRot), [0, -1, 0]);
 
-    drawOBJ(house,houseTexture);
+    drawOBJ(bulletMesh,bulletTexture);
   }
   
   // draw ammo
@@ -619,9 +644,9 @@ function animate() {
 	
 	  // bullet
 	  if (fire) {
-		  var angle = degToRad(bulletRot);
-		  xBulletPosition -= Math.sin(angle)*bulletSpeed;
-		  zBulletPosition -= Math.cos(angle)*(-bulletSpeed);
+		  var angle = degToRad(bulletMesh.bulletRot);
+		  bulletMesh.xBulletPosition -= Math.sin(angle)*bulletSpeed;
+		  bulletMesh.zBulletPosition -= Math.cos(angle)*(-bulletSpeed);
 	  }
 	  if (timeNow - lastFire > bulletLifetime)
 	  {
@@ -909,9 +934,9 @@ function start() {
 		fire = true;
 		ammoCount--;
 		document.getElementById("ammo-count").innerHTML = ammoCount;
-		xBulletPosition = xPosition;
-		zBulletPosition = zPosition;
-		bulletRot = rotMouse;
+		bulletMesh.xBulletPosition = xPosition;
+		bulletMesh.zBulletPosition = zPosition;
+		bulletMesh.bulletRot = rotMouse;
 	}	
       }, false
   );
@@ -936,12 +961,13 @@ function start() {
     loadSoldier();
     loadBomb();
     loadHouse();
-	loadAmmo();
-
+  	loadAmmo();
+    loadBullet();
   setTimeout(
     function() 
     {
     initPhy();
+
       //console.log(getOBJSize(mesh));
       // Bind keyboard handling functions to document handlers
       document.onkeydown = handleKeyDown;
