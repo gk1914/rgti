@@ -12,6 +12,7 @@ var mesh = null;
 var bomb = null;
 var house = null;
 var ammo;
+var bulletMesh;
 var bombList = [];
 // Model-view and projection matrix and model-view matrix stack
 var mvMatrixStack = [];
@@ -24,6 +25,8 @@ var midTexture = null;
 var bombTexture = null;
 var houseTexture = null;
 var ammoTexture = null;
+var bulletTexture = null;
+
 // Variable that stores  loading state of textures.
 var texturesLoaded = false;
 
@@ -61,11 +64,11 @@ var lastFire = 0;
 var ammoCount = 5;
 var fireCooldown = 1500;
 var bulletLifetime = 1000;
-var xBulletPositionPosition;
-var zBPositionPosition;
+var xBulletPosition;
+var zBulletPosition;
 var bulletRot;
 var bulletSpeed = 0.3;
-
+var bullet;
 //
 // Moving bombs
 var bombSpeed = 0.005;
@@ -84,7 +87,17 @@ var bombMoveProgram = [
 	[[-8,0], [-6, 0], [-14, 0], [-2, 0]],
 	[[4, -8], [3, -6], [12, -4], [1, -2]],
 	[[-4, -8], [-3, -6], [-12, -4], [-1, -2]]];
-
+	
+//
+// Ammo
+var lastAmmoPickup = 0;
+var ammoSpawnInterval = 10000;
+var ammoActive = true;
+var ammoSpawnPoints = [
+	[15,0,-5],
+	[-10,0,0],
+	[5,0,-12],
+	[-5,0,-10]];
 
 
 //
@@ -309,7 +322,6 @@ function getOBJSize(mesh){
       y.push(mesh.vertices[i]);      
     }else{
       z.push(mesh.vertices[i]);
-      console.log()
     }
   }
   var maxX = Math.max.apply(Math,x);
@@ -390,6 +402,18 @@ function loadAmmo() {
   request.send();
 }
 
+function loadBullet() {
+  var request = new XMLHttpRequest();
+  request.open("GET", "./assets/Bullet.obj");
+  request.onreadystatechange = function () {
+    if (request.readyState == 4) {
+      bulletMesh = importOBJ(request.responseText);
+    }
+  }
+  request.send();
+}
+
+
 //
 // 
 //
@@ -432,7 +456,18 @@ function initTextures() {
     handleTextureLoaded(ammoTexture)
   }
   ammoTexture.image.src = "./assets/D.png";
+
+  bulletTexture = gl.createTexture();
+  bulletTexture.image = new Image();
+  bulletTexture.image.onload = function () {
+    handleTextureLoaded(bulletTexture)
+  }
+  bulletTexture.image.src = "./assets/Bullet_Texture.jpg";
+
 }
+
+
+
 
 function handleTextureLoaded(texture) {
   gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
@@ -546,21 +581,22 @@ function drawScene() {
     //console.log("FIRE");
     mvPopMatrix();
     mvPushMatrix();
-    mat4.translate(mvMatrix, [xBulletPosition, 2.25, zBulletPosition-1.5]);
-    mat4.scale(mvMatrix, [0.05,0.05,0.05]);
-    mat4.rotate(mvMatrix, degToRad(bulletRot+90), [0, -1, 0]);
+    mat4.translate(mvMatrix, [bulletMesh.xBulletPosition, 2.25, bulletMesh.zBulletPosition-1.5]);
+    mat4.scale(mvMatrix, [0.2,0.2,0.2]);
+    mat4.rotate(mvMatrix, degToRad(bulletMesh.bulletRot), [0, -1, 0]);
 
-    drawOBJ(house,houseTexture);
+    drawOBJ(bulletMesh,bulletTexture);
   }
   
   // draw ammo
-    //console.log("FIRE");
-    mvPopMatrix();
+  if (ammoActive) {
+	mvPopMatrix();
     mvPushMatrix();
-    mat4.translate(mvMatrix, [0, 0.0, 0]);
+    mat4.translate(mvMatrix, ammo.position);
 
     drawOBJ(ammo,ammoTexture);
-
+  }
+  
 }
 
 
@@ -606,31 +642,43 @@ function animate() {
 
     if (speedSide != 0) {
       xPosition -= speedSide * elapsed;
-    }
-    
-    // bombs
-    if (timeNow - lastSpawn > spawnInterval) {
-	if (lastSpawn != 0) 
-	  spawnBombs();
-	  lastSpawn = timeNow;
-    }
-    updateBombDirection();
-    animateBombs(elapsed);
-	
-	  // bullet
-	  if (fire) {
-		  var angle = degToRad(bulletRot);
-		  xBulletPosition -= Math.sin(angle)*bulletSpeed;
-		  zBulletPosition -= Math.cos(angle)*(-bulletSpeed);
-	  }
-	  if (timeNow - lastFire > bulletLifetime)
-	  {
-	    fire = false;
-	  }
+    } 
+  }
+  lastTime = timeNow;
+  
+  // ammo
+  if (!ammoActive && timeNow - lastAmmoPickup > ammoSpawnInterval) {
+	spawnAmmo();
+	console.log("spanw ammo");  
+  }
+  if (ammoActive && distance([xPosition, zPosition-1.5], [ammo.position[0], ammo.position[2]]) < 1) {
+	  console.log("sdhsgh");
+	lastAmmoPickup = timeNow;
+    ammoCount += 5;
+	document.getElementById("ammo-count").innerHTML = ammoCount;
+	ammoActive = false;
   }
   
-  //console.log(xPosition);
-  lastTime = timeNow;
+  // bombs
+  if (timeNow - lastSpawn > spawnInterval) {
+  if (lastSpawn != 0) 
+	spawnBombs();
+	lastSpawn = timeNow;
+  }
+  updateBombDirection();
+  animateBombs(elapsed);
+	
+  // bullet
+  if (fire) {
+	var angle = degToRad(bulletMesh.bulletRot);
+	bulletMesh.xBulletPosition -= Math.sin(angle)*bulletSpeed;
+	bulletMesh.zBulletPosition -= Math.cos(angle)*(-bulletSpeed);
+  }
+  if (timeNow - lastFire > bulletLifetime)
+  {
+	fire = false;
+  }
+  
     
 
   updateOimoPhysics();
@@ -647,7 +695,7 @@ function animateBombs(elapsed) {
 //
 // Function for spawning bombs and a helper function for randomizing spawn point
 function spawnBombs() {
-  spawnIndex = getSpawnIndex();
+  spawnIndex = getSpawnIndex(bombSpawnPoints.length);
   bombList.push(importOBJ(bombResponseText));
   var tempIdx = bombList.length-1;
   bombList[tempIdx].position = bombSpawnPoints[spawnIndex].slice();
@@ -659,8 +707,8 @@ function spawnBombs() {
   bodysMY[bodysMY.length] = new OBJmodel(bombList[tempIdx].size, bombList[tempIdx].position, "bomb");
 }
 
-function getSpawnIndex() {
-  return Math.floor(Math.random() * bombSpawnPoints.length);
+function getSpawnIndex(upTo) {
+  return Math.floor(Math.random() * upTo);
 }
 
 // Destroy bomb at index i
@@ -801,6 +849,11 @@ function populate() {
 
   bodysMY[1] = new OBJmodel(house.size, house.position, "house");
 
+  // ammo
+  ammo.position = [10,0,-5];
+  ammo.rotation = [0,0,0];
+  ammo.size = getOBJSize(ammo);
+  //meshes[]...
 
   //addBomb();
 }
@@ -829,6 +882,14 @@ function addBomb(){
   console.log(meshes.length);*/
 
   return ibomb;
+}
+
+// Add new ammo crate
+function spawnAmmo() {
+  var spawnIndex = getSpawnIndex(ammoSpawnPoints.length);
+  ammo.position[0] = ammoSpawnPoints[spawnIndex][0];
+  ammo.position[1] = ammoSpawnPoints[spawnIndex][1];
+  ammoActive = true;
 }
 
 
@@ -909,9 +970,9 @@ function start() {
 		fire = true;
 		ammoCount--;
 		document.getElementById("ammo-count").innerHTML = ammoCount;
-		xBulletPosition = xPosition;
-		zBulletPosition = zPosition;
-		bulletRot = rotMouse;
+		bulletMesh.xBulletPosition = xPosition;
+		bulletMesh.zBulletPosition = zPosition;
+		bulletMesh.bulletRot = rotMouse;
 	}	
       }, false
   );
@@ -936,12 +997,13 @@ function start() {
     loadSoldier();
     loadBomb();
     loadHouse();
-	loadAmmo();
-
+  	loadAmmo();
+    loadBullet();
   setTimeout(
     function() 
     {
     initPhy();
+
       //console.log(getOBJSize(mesh));
       // Bind keyboard handling functions to document handlers
       document.onkeydown = handleKeyDown;
