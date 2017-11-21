@@ -737,8 +737,9 @@ function animate() {
     ammoCount += 5;
 	document.getElementById("ammo-count").innerHTML = ammoCount;
 	ammoActive = false;
+  playAmmoPickup();
   }
-  
+  checkCollisions();
   // bombs
   if (timeNow - lastSpawn > spawnInterval) {
   if (lastSpawn != 0) 
@@ -997,7 +998,19 @@ function updateOimoPhysics() {
     }
 
 
+function checkCollisions(){
+  for (var i = 0; i < meshes.length; i++) {
+    // Soldier vs bombs
+    if(i == 0){
+      for (var j = 0; j < bombList.length; j++) {
 
+        if(bodysMY[i].detectCollision(bodysMY[j+2]) != null){
+          destroyBomb(j);
+        }
+      }
+    }
+  }
+}
 
 
 
@@ -1035,7 +1048,12 @@ function start() {
 		bullet.rotation = rotMouse;
 		bullet.size = getOBJSize(bullet);*/
 		bulletBody = new OBJmodel(getOBJSize(bulletMesh), [xPosition,0,zPosition], "bullet");
-	}	
+
+	playShot();
+    }
+    if(ammoCount == 0){
+      playEmptyPickup();
+    } 
       }, false
   );
   
@@ -1061,6 +1079,7 @@ function start() {
     loadHouse();
   	loadAmmo();
     loadBullet();
+    playAmbientAudio();
   setTimeout(
     function() 
     {
