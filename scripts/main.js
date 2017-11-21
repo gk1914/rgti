@@ -817,7 +817,6 @@ function addBomb(){
   ibomb.size = getOBJSize(ibomb);
   meshes[meshes.length] = ibomb;
   bodysMY[bodysMY.length] = new OBJmodel(ibomb.size, ibomb.position, "bomb");
-  console.log(meshes.length);
   
   /*bombList[0].position = [0,0,0];
   bombList[0].rotation = [0,0,0];
@@ -881,7 +880,6 @@ function checkCollisions(){
 
   //Bullet vs Bombs
   for (var j = 0; j < bombList.length; j++) {
-    console.log(bulletBody);
       if(fire && bulletBody.detectCollision(getBombBody(j)) != null){
         destroyBomb(j);   
       }
@@ -897,10 +895,17 @@ function checkCollisions(){
 // Called when the canvas is created to get the ball rolling.
 // Figuratively, that is. There's nothing moving in this demo.
 //
+
+function initHUD(){
+  $("#container").css("width", $("#glcanvas").width());
+  $("#container").css("height", $("#glcanvas").height());
+}
+
 function start() {
   canvas = document.getElementById("glcanvas");
   infos = document.getElementById("info");
   //mouse movement listner
+  initHUD();
   canvas.addEventListener("mousemove", function(evt) {
       var xMouse = evt.offsetX || (evt.pageX - canvas.offsetLeft);
       var yMouse = evt.offsetY || (evt.pageY - canvas.offsetTop);

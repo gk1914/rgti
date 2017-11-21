@@ -80,14 +80,41 @@
 	<body onload="start()">
 		<h1>Zombie</h1>
 		<div id="content">
-			<canvas id="glcanvas"  width="1280px" height="720px">
-				No <code>&lt;canvas&gt;</code> suppport in your browser.
-			</canvas>
+			<div id="container">
+				<canvas id="glcanvas"  width="1280px" height="720px">
+				
+					No <code>&lt;canvas&gt;</code> suppport in your browser.
+				</canvas>
+			  <div id="overlay">
+			  <div style="position:relative;">
+			  	
+			  	<div class="ammo_wrap">
+			  		<div style="display: inline-block;">		  			
+				  		<img class="picture" src="assets/ammopicture.png">
+			  		</div>
+
+					<p id="ammo-count">5</p>
+			  	</div>
+			  	<div class="health_wrapper">
+			  		<div style="display: inline-block;">
+			  			<img class="picture health_status" src="assets/health.png">
+					</div>
+					<p id="health-soldier">100</p>
+
+			  	</div>
+			  	<div class="house_wrapper">
+				  	<div style="display: inline-block;">
+				  		<img class="picture house_status" src="assets/house.png">			  		
+				  	</div>
+					<p id="health-soldier">1000</p>
+			  	</div>
+			  </div>
+			  </div>
+			</div>
+
     		<div id="loadingtext">Loading world...</div>
 
-    		<div id='info'>
-				<p id="ammo-count">Krneki j tle: </p>
-			</div>
+
 			
 			<a href="./"><- Back</a>
 		</div>
