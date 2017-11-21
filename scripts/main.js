@@ -52,9 +52,35 @@ var lastTime = 0;
 
 var isCollision = false;
 
-// Moving bombs
+//
+// Firing
+var fire=false;
+var lastFire = 0;
+var fireCooldown = 1500;
+var bulletLifetime = 1000;
+var xBulletPositionPosition;
+var zBPositionPosition;
+var bulletRot;
+var bulletSpeed = 0.3;
 
-var bombSpeed = 0.01;
+//
+// Moving bombs
+var bombSpeed = 0.005;
+var bombSize;
+var bombResponseText;
+
+var lastSpawn = 0;
+var spawnInterval = 5000;
+var bombSpawnPoints = [
+	[10,0,0],
+	[-10,0,0],
+	[5,0,-10],
+	[-5,0,-10]];
+var bombMoveProgram = [
+	[[8,0], [6, 0], [14, 0], [2, 0]],
+	[[-8,0], [-6, 0], [-14, 0], [-2, 0]],
+	[[4, -8], [3, -6], [12, -4], [1, -2]],
+	[[-4, -8], [-3, -6], [-12, -4], [-1, -2]]];
 
 
 
@@ -330,6 +356,10 @@ function loadBomb() {
   request.onreadystatechange = function () {
     if (request.readyState == 4) {
       bomb = importOBJ(request.responseText);
+      bombSize = getOBJSize(bomb);
+      //bombList.push(importOBJ(request.responseText));
+	    //bombList.push(importOBJ(request.responseText));
+	    bombResponseText = request.responseText;
     }
   }
   request.send();
@@ -489,6 +519,18 @@ function drawScene() {
       drawOBJ(bomb,bombTexture);
     }
   }
+  
+  // draw bullet 
+  if (fire) {
+    //console.log("FIRE");
+    mvPopMatrix();
+    mvPushMatrix();
+    mat4.translate(mvMatrix, [xBulletPosition, 2.25, zBulletPosition-1.5]);
+    mat4.scale(mvMatrix, [0.05,0.05,0.05]);
+    mat4.rotate(mvMatrix, degToRad(bulletRot+90), [0, -1, 0]);
+
+    drawOBJ(house,houseTexture);
+  }
 
 }
 
@@ -536,8 +578,28 @@ function animate() {
     if (speedSide != 0) {
       xPosition -= speedSide * elapsed;
     }
-
+    
+    // bombs
+    if (timeNow - lastSpawn > spawnInterval) {
+	if (lastSpawn != 0) 
+	  spawnBombs();
+	  lastSpawn = timeNow;
+    }
+    updateBombDirection();
+    animateBombs(elapsed);
+	
+	  // bullet
+	  if (fire) {
+		  var angle = degToRad(bulletRot);
+		  xBulletPosition -= Math.sin(angle)*bulletSpeed;
+		  zBulletPosition -= Math.cos(angle)*(-bulletSpeed);
+	  }
+	  if (timeNow - lastFire > bulletLifetime)
+	  {
+	    fire = false;
+	  }
   }
+  
   //console.log(xPosition);
   lastTime = timeNow;
     
@@ -545,6 +607,75 @@ function animate() {
   updateOimoPhysics();
 
 }
+
+function animateBombs(elapsed) {
+	for (var i = 0; i < bombList.length; i++) {
+		bombList[i].position[0] += bombSpeed * elapsed * bombList[i].direction[0];
+		bombList[i].position[2] += bombSpeed * elapsed * bombList[i].direction[1];
+	}
+}
+
+//
+// Function for spawning bombs and a helper function for randomizing spawn point
+function spawnBombs() {
+  spawnIndex = getSpawnIndex();
+  bombList.push(importOBJ(bombResponseText));
+  var tempIdx = bombList.length-1;
+  bombList[tempIdx].position = bombSpawnPoints[spawnIndex].slice();
+  bombList[tempIdx].rotation = [0,0,0];
+  bombList[tempIdx].size = bombSize;
+  bombList[tempIdx].program = bombMoveProgram[spawnIndex];
+  bombList[tempIdx].currStep = 0;
+  meshes[meshes.length] = bombList[tempIdx];
+  bodysMY[bodysMY.length] = new OBJmodel(bombList[tempIdx].size, bombList[tempIdx].position, "bomb");
+}
+
+function getSpawnIndex() {
+  return Math.floor(Math.random() * bombSpawnPoints.length);
+}
+
+// Destroy bomb at index i
+function destroyBomb(i) {
+  bombList.splice(i,1);
+  meshes.splice(i+2,1);
+}
+
+// Update the direction of bombs (called every .... seconds)
+function updateBombDirection() {
+	for (var i = 2; i < meshes.length; i++) {
+		//meshes[i].direction = moveBomb([meshes[i].position[0], meshes[i].position[2]], [0, 0]);
+		var curr = meshes[i];
+		meshes[i].direction = moveBomb([meshes[i].position[0], meshes[i].position[2]], curr.program[curr.currStep])
+		
+		var distToNextStep = distance([curr.position[0], curr.position[2]], curr.program[curr.currStep]);
+		if (distToNextStep < 0.25)
+			meshes[i].currStep++;
+		if (meshes[i].currStep >= 4)
+			destroyBomb(i-2);
+	}
+}
+//Function for moving bomb from point a to point b
+function moveBomb(p1, p2) {
+	var x1 = p1[0];
+	var x2 = p2[0];
+	var y1 = p1[1];
+	var y2 = p2[1];
+	var dir = [(x2-x1), (y2-y1)];
+	var dist = distance(p1, p2);
+	var moveVector= [dir[0]/dist, dir[1]/dist];
+	return moveVector;
+}
+
+// Helper: get distance between point p1 and p2
+function distance(p1, p2) {
+	var x1 = p1[0];
+	var x2 = p2[0];
+	var y1 = p1[1];
+	var y2 = p2[1];
+	return Math.sqrt((x1-x2)*(x1-x2) + (y1-y2)*(y1-y2));
+}
+
+
 
 //
 // Keyboard handling helper functions
@@ -589,6 +720,11 @@ function handleKeys() {
   } else {
     speedForward = 0;
   }
+  
+  if (currentlyPressedKeys[32]) {
+    // delete bomb that spawned first
+    destroyBomb(0);
+  }
 }
 
 // rotate soldier
@@ -619,10 +755,7 @@ var meshesPositions = [];
 var bodysMY = [];
 var infos;
 
-function populate(){
-  
-  
-  
+function populate() {
   //soldier
   mesh.position = [0,0,0];
   mesh.rotation = [0,0,0];
@@ -640,17 +773,31 @@ function populate(){
   bodysMY[1] = new OBJmodel(house.size, house.position, "house");
 
 
-  addBomb();
+  //addBomb();
 }
 
 function addBomb(){
-    //house
   var ibomb = bomb
-  ibomb.position = [10,0,0];
+  ibomb.position = [0,0,-2];
   ibomb.rotation = [0,0,0];
   ibomb.size = getOBJSize(ibomb);
   meshes[meshes.length] = ibomb;
   bodysMY[bodysMY.length] = new OBJmodel(ibomb.size, ibomb.position, "bomb");
+  console.log(meshes.length);
+  
+  /*bombList[0].position = [0,0,0];
+  bombList[0].rotation = [0,0,0];
+  bombList[0].size = getOBJSize(bombList[0]);
+  meshes[meshes.length] = bombList[0];
+  bodysMY[bodysMY.length] = new OBJmodel(bombList[0].size, bombList[0].position, "bomb");
+  console.log(meshes.length);
+  
+  bombList[1].position = [10,0,0];
+  bombList[1].rotation = [0,0,0];
+  bombList[1].size = getOBJSize(bombList[1]);
+  meshes[meshes.length] = bombList[1];
+  bodysMY[bodysMY.length] = new OBJmodel(bombList[1].size, bombList[1].position, "bomb");
+  console.log(meshes.length);*/
 
   return ibomb;
 }
@@ -663,7 +810,7 @@ function updateOimoPhysics() {
             imesh = meshes[i];
             
             if (i == 0){
-                  console.log(zPosition);
+                  //console.log(zPosition);
 
               var io = new OBJmodel(bodysMY[0].size,bodysMY[0].position,"");
               io.setPosition([imesh.position[0]+xPosition,imesh.position[1],imesh.position[2]+zPosition]);
@@ -724,6 +871,20 @@ function start() {
     mouseRotation(xMouse,yMouse);
       }, false
       );
+  //mouse click listener
+  canvas.addEventListener("mousedown", function(evt) {
+    console.log("cscscsc");
+	var currTime = new Date().getTime();
+	if (currTime - lastFire > fireCooldown || lastFire == 0) {
+		lastFire = currTime;
+		fire = true;
+		xBulletPosition = xPosition;
+		zBulletPosition = zPosition;
+		bulletRot = rotMouse;
+	}	
+      }, false
+  );
+  
     gl = initGL(canvas);      // Initialize the GL context
 
   // Only continue if WebGL is available and working
