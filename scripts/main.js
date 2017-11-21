@@ -68,7 +68,7 @@ var xBulletPosition;
 var zBulletPosition;
 var bulletRot;
 var bulletSpeed = 0.3;
-var bullet;
+var bulletBody;
 //
 // Moving bombs
 var bombSpeed = 0.005;
@@ -76,12 +76,12 @@ var bombSize;
 var bombResponseText;
 
 var lastSpawn = 0;
-var spawnInterval = 5000;
+var spawnInterval = 3000;
 var bombSpawnPoints = [
-	[10,0,0],
-	[-10,0,0],
-	[5,0,-10],
-	[-5,0,-10]];
+	[10,0,-23],
+	[-10,0,-23],
+	[15,0,-20],
+	[-15,0,-20]];
 var bombMoveProgram = [
 	[[8,0], [6, 0], [14, 0], [2, 0]],
 	[[-8,0], [-6, 0], [-14, 0], [-2, 0]],
@@ -753,6 +753,7 @@ function animate() {
 	var angle = degToRad(bulletMesh.bulletRot);
 	bulletMesh.xBulletPosition -= Math.sin(angle)*bulletSpeed;
 	bulletMesh.zBulletPosition -= Math.cos(angle)*(-bulletSpeed);
+	bulletBody.setPosition(bulletMesh.xBulletPosition, bulletMesh.zBulletPosition);
   }
   if (timeNow - lastFire > bulletLifetime)
   {
@@ -769,6 +770,11 @@ function animateBombs(elapsed) {
 	for (var i = 0; i < bombList.length; i++) {
 		bombList[i].position[0] += bombSpeed * elapsed * bombList[i].direction[0];
 		bombList[i].position[2] += bombSpeed * elapsed * bombList[i].direction[1];
+		bodysMY[i+2].setPosition(bombList[i].position[0], bombList[i].position[1]);
+		/*if (i == 0) {
+			console.log(bombList[i].position[0]);
+			console.log(bombList[i].position[2]);
+		}*/
 	}
 }
 
@@ -964,6 +970,10 @@ function addBomb(){
   return ibomb;
 }
 
+function getBombBody(i) {
+	return bodysMY[i+2];
+}
+
 // Add new ammo crate
 function spawnAmmo() {
   var spawnIndex = getSpawnIndex(ammoSpawnPoints.length);
@@ -1020,6 +1030,11 @@ function start() {
 		bulletMesh.xBulletPosition = xPosition;
 		bulletMesh.zBulletPosition = zPosition;
 		bulletMesh.bulletRot = rotMouse;
+		// nastavi vrednosti za body, po "kreaciji" novega metka
+		/*bullet.position = [xPosition,0,zPosition];
+		bullet.rotation = rotMouse;
+		bullet.size = getOBJSize(bullet);*/
+		bulletBody = new OBJmodel(getOBJSize(bulletMesh), [xPosition,0,zPosition], "bullet");
 	}	
       }, false
   );
