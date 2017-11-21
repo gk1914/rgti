@@ -15,6 +15,7 @@ function playEmptyPickup(){
 
 function playAmbientAudio(){
 	var audio2 = new Audio("assets/ambientSound.mp3"); // buffers automatically when created
+	audio2.loop = true;
 	audio2.volume = 0.4;
 	audio2.play();
 }

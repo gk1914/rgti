@@ -1,103 +1,3 @@
-// Global variable definitionvar canvas;
-var canvas;
-var gl;
-var shaderProgram;
-
-
-
-// Buffers
-var worldVertexPositionBuffer = null;
-var worldVertexTextureCoordBuffer = null;
-var mesh = null;
-var bomb = null;
-var house = null;
-var ammo;
-var bulletMesh;
-var bombList = [];
-// Model-view and projection matrix and model-view matrix stack
-var mvMatrixStack = [];
-var mvMatrix = mat4.create();
-var pMatrix = mat4.create();
-
-// Variables for storing textures
-var wallTexture = null;
-var midTexture = null;
-var bombTexture = null;
-var houseTexture = null;
-var ammoTexture = null;
-var bulletTexture = null;
-
-// Variable that stores  loading state of textures.
-var texturesLoaded = false;
-
-// Keyboard handling helper variable for reading the status of keys
-var currentlyPressedKeys = {};
-
-// Variables for storing current position and speed
-var yaw = 0;
-var xPosition = 0;
-var yPosition = 3;
-var zPosition = 0;
-var speedForward = 0;
-var speedSide = 0;
-
-//mouse position
-var xMouse = 0;
-var yMouse = 0;
-var rotMouse = 0;
-// Used to make us "jog" up and down as we move forward.
-var joggingAngle = 0;
-var movingSpeed = 0.008;
-
-var spawnPosition = [1,0,0];
-
-// Helper variable for animation
-var lastTime = 0;
-
-
-var isCollision = false;
-
-//
-// Firing
-var fire=false;
-var lastFire = 0;
-var ammoCount = 5;
-var fireCooldown = 1500;
-var bulletLifetime = 1000;
-var xBulletPosition;
-var zBulletPosition;
-var bulletRot;
-var bulletSpeed = 0.3;
-var bulletBody;
-//
-// Moving bombs
-var bombSpeed = 0.005;
-var bombSize;
-var bombResponseText;
-
-var lastSpawn = 0;
-var spawnInterval = 3000;
-var bombSpawnPoints = [
-	[10,0,-23],
-	[-10,0,-23],
-	[15,0,-20],
-	[-15,0,-20]];
-var bombMoveProgram = [
-	[[8,0], [6, 0], [14, 0], [2, 0]],
-	[[-8,0], [-6, 0], [-14, 0], [-2, 0]],
-	[[4, -8], [3, -6], [12, -4], [1, -2]],
-	[[-4, -8], [-3, -6], [-12, -4], [-1, -2]]];
-	
-//
-// Ammo
-var lastAmmoPickup = 0;
-var ammoSpawnInterval = 10000;
-var ammoActive = true;
-var ammoSpawnPoints = [
-	[15,0,-5],
-	[-10,0,0],
-	[5,0,-12],
-	[-5,0,-10]];
 
 
 //
@@ -373,83 +273,6 @@ function getOBJSize(mesh){
   return [Math.abs(maxX) + Math.abs(minX), Math.abs(maxY) + Math.abs(minY), Math.abs(maxZ) + Math.abs(minZ)]
 }
 
-function importOBJ(data){
-  var mesh = new OBJ.Mesh(data);
-  OBJ.initMeshBuffers(gl, mesh);
-  return mesh
-}
-function loadWorld() {
-  var request = new XMLHttpRequest();
-  request.open("GET", "./assets/world.txt");
-  request.onreadystatechange = function () {
-    if (request.readyState == 4) {
-      handleLoadedWorld(request.responseText);
-    }
-  }
-  request.send();
-}
-
-function loadSoldier() {
-  var request = new XMLHttpRequest();
-  request.open("GET", "./assets/soldier2.obj");
-  request.onreadystatechange = function () {
-    if (request.readyState == 4) {
-      mesh = importOBJ(request.responseText);
-
-
-    }
-  }
-  request.send();
-}
-
-function loadBomb() {
-  var request = new XMLHttpRequest();
-  request.open("GET", "./assets/bomb.obj");
-  request.onreadystatechange = function () {
-    if (request.readyState == 4) {
-      bomb = importOBJ(request.responseText);
-      bombSize = getOBJSize(bomb);
-      //bombList.push(importOBJ(request.responseText));
-	    //bombList.push(importOBJ(request.responseText));
-	    bombResponseText = request.responseText;
-    }
-  }
-  request.send();
-}
-
-function loadHouse() {
-  var request = new XMLHttpRequest();
-  request.open("GET", "./assets/farmhouse.obj");
-  request.onreadystatechange = function () {
-    if (request.readyState == 4) {
-      house = importOBJ(request.responseText);
-    }
-  }
-  request.send();
-}
-
-function loadAmmo() {
-  var request = new XMLHttpRequest();
-  request.open("GET", "./assets/dinamite.obj");
-  request.onreadystatechange = function () {
-    if (request.readyState == 4) {
-      ammo = importOBJ(request.responseText);
-    }
-  }
-  request.send();
-}
-
-function loadBullet() {
-  var request = new XMLHttpRequest();
-  request.open("GET", "./assets/Bullet2.obj");
-  request.onreadystatechange = function () {
-    if (request.readyState == 4) {
-      bulletMesh = importOBJ(request.responseText);
-    }
-  }
-  request.send();
-}
-
 
 //
 // 
@@ -500,6 +323,14 @@ function initTextures() {
     handleTextureLoaded(bulletTexture)
   }
   bulletTexture.image.src = "./assets/Bullet_Texture.jpg";
+
+  rockTexture = gl.createTexture();
+  rockTexture.image = new Image();
+  rockTexture.image.onload = function () {
+    handleTextureLoaded(rockTexture)
+  }
+  rockTexture.image.src = "./assets/rock1text.jpg";
+
 
 }
 
@@ -597,6 +428,16 @@ function drawScene() {
   gl.uniform3f(shaderProgram.directionalColorUniform,1.0,1.0,1.0);
 
 
+
+  for (var i = 0; i < rocks.length; i++) {
+    mvPopMatrix();
+    mvPushMatrix();
+
+    mat4.translate(mvMatrix, [rocks[i].position[0], rocks[i].position[1], rocks[i].position[2]]);
+
+    drawOBJ(rockMesh,rockTexture);
+
+  }
 
   for (var i = 0; i < meshes.length; i++) {
     // restore last location
@@ -801,6 +642,8 @@ function getSpawnIndex(upTo) {
 function destroyBomb(i) {
   bombList.splice(i,1);
   meshes.splice(i+2,1);
+  playExplosion();
+
 }
 
 // Update the direction of bombs (called every .... seconds)
@@ -916,8 +759,9 @@ function initPhy(){
 var meshes = [];
 var meshesPositions = [];
 var bodysMY = [];
+var rocks = [];
 var infos;
-
+var rock;
 function populate() {
   //soldier
   mesh.position = [0,0,0];
@@ -942,6 +786,28 @@ function populate() {
   //meshes[]...
 
   //addBomb();
+
+  rock1 = new OBJmodel(house.size, house.position, "rock");
+  rock2 = new OBJmodel(house.size, house.position, "rock");
+  rock3 = new OBJmodel(house.size, house.position, "rock");
+  rock4 = new OBJmodel(house.size, house.position, "rock");
+  rock1.position = [10,0,-4];
+  rock2.position = [-16,0,11];
+  rock3.position = [-20,0,3];
+  rock4.position = [-10,0,22];
+  rock1.rotation = [22,0,3];
+  rock2.rotation = [-11,0,-16];
+  rock3.rotation = [25,0,-21];
+  rock4.rotation = [2,0,-12];
+  rock1.size = getOBJSize(rockMesh);
+  rock2.size = getOBJSize(rockMesh);
+  rock3.size = getOBJSize(rockMesh);
+  rock4.size = getOBJSize(rockMesh);
+  rocks[0] = rock1;
+  rocks[1] = rock2;
+  rocks[2] = rock3;
+  rocks[3] = rock4;
+
 }
 
 function addBomb(){
@@ -1002,7 +868,6 @@ function checkCollisions(){
   for (var i = 0; i < bombList.length; i++) {
     if(bodysMY[0].detectCollision(getBombBody(i)) != null){
       //Soldier dies
-      playExplosion();
       destroyBomb(i);   
     }
   }
@@ -1010,7 +875,6 @@ function checkCollisions(){
   //House vs Bombs
   for (var j = 0; j < bombList.length; j++) {
       if(bodysMY[1].detectCollision(getBombBody(j)) != null){
-        playExplosion();
         destroyBomb(j);   
       }
   }
@@ -1019,7 +883,6 @@ function checkCollisions(){
   for (var j = 0; j < bombList.length; j++) {
     console.log(bulletBody);
       if(fire && bulletBody.detectCollision(getBombBody(j)) != null){
-        playExplosion();
         destroyBomb(j);   
       }
   }
@@ -1086,12 +949,7 @@ function start() {
     // Next, load and set up the textures we'll be using.
     initTextures();
     // Initialise world objects
-    loadWorld();
-    loadSoldier();
-    loadBomb();
-    loadHouse();
-  	loadAmmo();
-    loadBullet();
+    loadObjects();
     playAmbientAudio();
   setTimeout(
     function() 
