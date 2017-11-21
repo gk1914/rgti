@@ -222,22 +222,42 @@ function initShaders() {
   
   // store location of aVertexPosition variable defined in shader
   shaderProgram.vertexPositionAttribute = gl.getAttribLocation(shaderProgram, "aVertexPosition");
-
+  
   // turn on vertex position attribute at specified position
   gl.enableVertexAttribArray(shaderProgram.vertexPositionAttribute);
 
   // store location of aVertexNormal variable defined in shader
-  shaderProgram.textureCoordAttribute = gl.getAttribLocation(shaderProgram, "aTextureCoord");
+  shaderProgram.vertexNormalAttribute = gl.getAttribLocation(shaderProgram, "aVertexNormal");
+
+  // turn on vertex normal attribute at specified position
+  gl.enableVertexAttribArray(shaderProgram.vertexNormalAttribute);
 
   // store location of aTextureCoord variable defined in shader
+  shaderProgram.textureCoordAttribute = gl.getAttribLocation(shaderProgram, "aTextureCoord");
+
+  // turn on vertex texture coordinates attribute at specified position
   gl.enableVertexAttribArray(shaderProgram.textureCoordAttribute);
 
   // store location of uPMatrix variable defined in shader - projection matrix 
   shaderProgram.pMatrixUniform = gl.getUniformLocation(shaderProgram, "uPMatrix");
+
   // store location of uMVMatrix variable defined in shader - model-view matrix 
   shaderProgram.mvMatrixUniform = gl.getUniformLocation(shaderProgram, "uMVMatrix");
+
+  // store location of uNMatrix variable defined in shader - normal matrix 
+  shaderProgram.nMatrixUniform = gl.getUniformLocation(shaderProgram, "uNMatrix");
+
   // store location of uSampler variable defined in shader
   shaderProgram.samplerUniform = gl.getUniformLocation(shaderProgram, "uSampler");
+
+  // store location of uAmbientColor variable defined in shader
+  shaderProgram.ambientColorUniform = gl.getUniformLocation(shaderProgram, "uAmbientColor");
+
+  // store location of uLightingDirection variable defined in shader
+  shaderProgram.lightingDirectionUniform = gl.getUniformLocation(shaderProgram, "uLightingDirection");
+
+  // store location of uDirectionalColor variable defined in shader
+  shaderProgram.directionalColorUniform = gl.getUniformLocation(shaderProgram, "uDirectionalColor");
 }
 
 //
@@ -284,11 +304,28 @@ function handleLoadedWorld(data) {
     }
   }
 
+  var vertexNormalsCoords = [
+       0.0,  0.0,  1.0,
+       0.0,  0.0,  1.0,
+       0.0,  0.0,  1.0,
+
+       0.0,  0.0,  1.0,
+       0.0,  0.0,  1.0,
+       0.0,  0.0,  1.0
+  ];
+
   worldVertexPositionBuffer = gl.createBuffer();
   gl.bindBuffer(gl.ARRAY_BUFFER, worldVertexPositionBuffer);
   gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertexPositions), gl.STATIC_DRAW);
   worldVertexPositionBuffer.itemSize = 3;
   worldVertexPositionBuffer.numItems = vertexCount;
+
+  worldVertexNormalsBuffer = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, worldVertexNormalsBuffer);
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertexNormalsCoords), gl.STATIC_DRAW);
+  worldVertexNormalsBuffer.itemSize = 3;
+  worldVertexNormalsBuffer.numItems = vertexCount;
+
 
   worldVertexTextureCoordBuffer = gl.createBuffer();
   gl.bindBuffer(gl.ARRAY_BUFFER, worldVertexTextureCoordBuffer);
@@ -534,6 +571,9 @@ function drawScene() {
   gl.bindBuffer(gl.ARRAY_BUFFER, worldVertexTextureCoordBuffer);
   gl.vertexAttribPointer(shaderProgram.textureCoordAttribute, worldVertexTextureCoordBuffer.itemSize, gl.FLOAT, false, 0, 0);
 
+  gl.bindBuffer(gl.ARRAY_BUFFER, worldVertexNormalsBuffer);
+  gl.vertexAttribPointer(shaderProgram.vertexNormalAttribute, worldVertexNormalsBuffer.itemSize, gl.FLOAT, false, 0, 0);
+
   
   gl.bindBuffer(gl.ARRAY_BUFFER, worldVertexPositionBuffer);
   gl.vertexAttribPointer(shaderProgram.vertexPositionAttribute, worldVertexPositionBuffer.itemSize, gl.FLOAT, false, 0, 0);
@@ -545,6 +585,16 @@ function drawScene() {
   // ^^^^^^^
   //  WORLD
   
+
+  gl.uniform3f(shaderProgram.ambientColorUniform,0.88,0.81,1);
+
+  var lightingDirection = [-0.25,-0.25,-0.25];
+  var adjustedLD = vec3.create();
+  vec3.normalize(lightingDirection, adjustedLD);
+  vec3.scale(adjustedLD, -1);
+  gl.uniform3fv(shaderProgram.lightingDirectionUniform, adjustedLD);
+
+  gl.uniform3f(shaderProgram.directionalColorUniform,1.0,1.0,1.0);
 
 
 
@@ -610,6 +660,10 @@ function drawOBJ(obj,texture){
   // Set the texture coordinates attribute for the vertices.
   gl.bindBuffer(gl.ARRAY_BUFFER, obj.textureBuffer);
   gl.vertexAttribPointer(shaderProgram.textureCoordAttribute, obj.textureBuffer.itemSize, gl.FLOAT, false, 0, 0);
+
+  gl.bindBuffer(gl.ARRAY_BUFFER, obj.normalBuffer);
+  gl.vertexAttribPointer(shaderProgram.vertexNormalAttribute, obj.normalBuffer.itemSize, gl.FLOAT, false, 0, 0);
+
 
   // Activate textures
   gl.activeTexture(gl.TEXTURE0);
