@@ -18,3 +18,8 @@ function playAmbientAudio(){
 	audio2.volume = 0.4;
 	audio2.play();
 }
+
+function playExplosion(){
+	var audio2 = new Audio("assets/bomb.mp3"); // buffers automatically when created
+	audio2.play();
+}

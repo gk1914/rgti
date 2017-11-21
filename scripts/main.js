@@ -441,7 +441,7 @@ function loadAmmo() {
 
 function loadBullet() {
   var request = new XMLHttpRequest();
-  request.open("GET", "./assets/Bullet.obj");
+  request.open("GET", "./assets/Bullet2.obj");
   request.onreadystatechange = function () {
     if (request.readyState == 4) {
       bulletMesh = importOBJ(request.responseText);
@@ -632,7 +632,6 @@ function drawScene() {
     mvPopMatrix();
     mvPushMatrix();
     mat4.translate(mvMatrix, [bulletMesh.xBulletPosition, 2.25, bulletMesh.zBulletPosition-1.5]);
-    mat4.scale(mvMatrix, [0.2,0.2,0.2]);
     mat4.rotate(mvMatrix, degToRad(bulletMesh.bulletRot), [0, -1, 0]);
 
     drawOBJ(bulletMesh,bulletTexture);
@@ -739,7 +738,6 @@ function animate() {
 	ammoActive = false;
   playAmmoPickup();
   }
-  checkCollisions();
   // bombs
   if (timeNow - lastSpawn > spawnInterval) {
   if (lastSpawn != 0) 
@@ -754,13 +752,14 @@ function animate() {
 	var angle = degToRad(bulletMesh.bulletRot);
 	bulletMesh.xBulletPosition -= Math.sin(angle)*bulletSpeed;
 	bulletMesh.zBulletPosition -= Math.cos(angle)*(-bulletSpeed);
-	bulletBody.setPosition(bulletMesh.xBulletPosition, bulletMesh.zBulletPosition);
+	bulletBody.setPosition([bulletMesh.xBulletPosition, 2.25, bulletMesh.zBulletPosition]);
   }
   if (timeNow - lastFire > bulletLifetime)
   {
 	fire = false;
   }
   
+  checkCollisions();
     
 
   updateOimoPhysics();
@@ -771,7 +770,7 @@ function animateBombs(elapsed) {
 	for (var i = 0; i < bombList.length; i++) {
 		bombList[i].position[0] += bombSpeed * elapsed * bombList[i].direction[0];
 		bombList[i].position[2] += bombSpeed * elapsed * bombList[i].direction[1];
-		bodysMY[i+2].setPosition(bombList[i].position[0], bombList[i].position[1]);
+		bodysMY[i+2].setPosition(bombList[i].position);
 		/*if (i == 0) {
 			console.log(bombList[i].position[0]);
 			console.log(bombList[i].position[2]);
@@ -999,16 +998,30 @@ function updateOimoPhysics() {
 
 
 function checkCollisions(){
-  for (var i = 0; i < meshes.length; i++) {
-    // Soldier vs bombs
-    if(i == 0){
-      for (var j = 0; j < bombList.length; j++) {
-
-        if(bodysMY[i].detectCollision(bodysMY[j+2]) != null){
-          destroyBomb(j);
-        }
-      }
+    // Soldier vs Bombs
+  for (var i = 0; i < bombList.length; i++) {
+    if(bodysMY[0].detectCollision(getBombBody(i)) != null){
+      //Soldier dies
+      playExplosion();
+      destroyBomb(i);   
     }
+  }
+
+  //House vs Bombs
+  for (var j = 0; j < bombList.length; j++) {
+      if(bodysMY[1].detectCollision(getBombBody(j)) != null){
+        playExplosion();
+        destroyBomb(j);   
+      }
+  }
+
+  //Bullet vs Bombs
+  for (var j = 0; j < bombList.length; j++) {
+    console.log(bulletBody);
+      if(fire && bulletBody.detectCollision(getBombBody(j)) != null){
+        playExplosion();
+        destroyBomb(j);   
+      }
   }
 }
 
@@ -1047,7 +1060,7 @@ function start() {
 		/*bullet.position = [xPosition,0,zPosition];
 		bullet.rotation = rotMouse;
 		bullet.size = getOBJSize(bullet);*/
-		bulletBody = new OBJmodel(getOBJSize(bulletMesh), [xPosition,0,zPosition], "bullet");
+		bulletBody = new OBJmodel(getOBJSize(bulletMesh), [xPosition,2.25,zPosition], "bullet");
 
 	playShot();
     }
