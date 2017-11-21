@@ -11,6 +11,7 @@ var worldVertexTextureCoordBuffer = null;
 var mesh = null;
 var bomb = null;
 var house = null;
+var ammo;
 var bombList = [];
 // Model-view and projection matrix and model-view matrix stack
 var mvMatrixStack = [];
@@ -22,6 +23,7 @@ var wallTexture = null;
 var midTexture = null;
 var bombTexture = null;
 var houseTexture = null;
+var ammoTexture = null;
 // Variable that stores  loading state of textures.
 var texturesLoaded = false;
 
@@ -56,6 +58,7 @@ var isCollision = false;
 // Firing
 var fire=false;
 var lastFire = 0;
+var ammoCount = 5;
 var fireCooldown = 1500;
 var bulletLifetime = 1000;
 var xBulletPositionPosition;
@@ -376,6 +379,17 @@ function loadHouse() {
   request.send();
 }
 
+function loadAmmo() {
+  var request = new XMLHttpRequest();
+  request.open("GET", "./assets/dinamite.obj");
+  request.onreadystatechange = function () {
+    if (request.readyState == 4) {
+      ammo = importOBJ(request.responseText);
+    }
+  }
+  request.send();
+}
+
 //
 // 
 //
@@ -411,6 +425,13 @@ function initTextures() {
     handleTextureLoaded(houseTexture)
   }
   houseTexture.image.src = "./assets/farmhouseT.jpg";
+  
+  ammoTexture = gl.createTexture();
+  ammoTexture.image = new Image();
+  ammoTexture.image.onload = function () {
+    handleTextureLoaded(ammoTexture)
+  }
+  ammoTexture.image.src = "./assets/D.png";
 }
 
 function handleTextureLoaded(texture) {
@@ -531,6 +552,14 @@ function drawScene() {
 
     drawOBJ(house,houseTexture);
   }
+  
+  // draw ammo
+    //console.log("FIRE");
+    mvPopMatrix();
+    mvPushMatrix();
+    mat4.translate(mvMatrix, [0, 0.0, 0]);
+
+    drawOBJ(ammo,ammoTexture);
 
 }
 
@@ -875,9 +904,11 @@ function start() {
   canvas.addEventListener("mousedown", function(evt) {
     console.log("cscscsc");
 	var currTime = new Date().getTime();
-	if (currTime - lastFire > fireCooldown || lastFire == 0) {
+	if ((currTime - lastFire > fireCooldown || lastFire == 0) && ammoCount > 0) {
 		lastFire = currTime;
 		fire = true;
+		ammoCount--;
+		document.getElementById("ammo-count").innerHTML = ammoCount;
 		xBulletPosition = xPosition;
 		zBulletPosition = zPosition;
 		bulletRot = rotMouse;
@@ -905,6 +936,7 @@ function start() {
     loadSoldier();
     loadBomb();
     loadHouse();
+	loadAmmo();
 
   setTimeout(
     function() 
