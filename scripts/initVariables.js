@@ -62,7 +62,7 @@ var isCollision = false;
 // Firing
 var fire=false;
 var lastFire = 0;
-var ammoCount = 50;
+var ammoCount = 5;
 var fireCooldown = 1500;
 var bulletLifetime = 1000;
 var xBulletPosition;
@@ -109,5 +109,8 @@ var rockSize;
 //
 // Game
 var timer = 0;
-var houseHP = 3;
+var houseHP = 1000;
+var playerHP = 100;
+var bombsKilled = 0;
 var gameActive = true;
+
