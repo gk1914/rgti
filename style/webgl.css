@@ -1,11 +1,9 @@
 #content {
 	width: 100%;
-	text-align: center;
 }
 
 canvas {
 	display: inline;
-	border: 1px solid black;
 }
 
 h1 {
@@ -35,3 +33,76 @@ td {
 #glcanvas{
 	cursor: crosshair;
 }
+
+#container {
+  position: relative;
+  width: 400px;
+  height: 300px;
+}
+#container canvas, #overlay {
+  position: absolute;
+}
+#overlay{
+	color: white;
+	background: rgba(90, 104, 91, 0.9215686274509803);
+	height: 75px;
+	font-size: 21px;
+    left: 720px;
+    bottom: 0;
+    right: 0;
+  	pointer-events:none;
+    border-top-left-radius: 90px;
+
+    -webkit-user-select: none;  
+    -khtml-user-select: none;   
+    -moz-user-select: none; 
+    -o-user-select: none;    
+    user-select: none; 
+}
+.picture{
+    width: 60px;
+    position: relative;
+}
+#ammo-count{
+	color: white;
+    font-size: 39px;
+    display: inline-block;
+    top: -20px;
+    height: 100%;
+    position: relative;
+}
+.ammo_wrap{
+    width: 260px;
+    display: inline-block;
+    position: absolute;
+    right: 0;
+    width: 150px;
+
+}
+.health_status{
+	position:relative;
+	top:-10px;
+}
+.health_wrapper{
+    display: inline-block;
+    position: absolute;
+    right: 190px;
+}
+
+.house_wrapper{
+    display: inline-block;
+    position: absolute;
+	right: 370px;
+}
+#health-soldier, #health-house{
+    color: white;
+    font-size: 39px;
+    display: inline-block;
+    top: -10px;
+    height: 100%;
+    position: relative;
+}
+.house_wrapper .picture{
+    top: -6px;	
+}
+
