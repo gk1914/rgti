@@ -80,16 +80,46 @@
 	<body onload="start()">
 		<h1>Zombie</h1>
 		<div id="content">
-			<canvas id="glcanvas"  width="1280px" height="720px">
-				No <code>&lt;canvas&gt;</code> suppport in your browser.
-			</canvas>
-    		<div id="loadingtext">Loading world...</div>
+			<div id="container">
+				<canvas id="glcanvas"  width="1280px" height="720px">
+				
+					No <code>&lt;canvas&gt;</code> suppport in your browser.
+				</canvas>
+			  <div id="overlay">
+			  <div style="position:relative;">
+			  	
+			  	<div class="ammo_wrap">
+			  		<div style="display: inline-block;">		  			
+				  		<img class="picture" src="assets/ammopicture.png">
+			  		</div>
 
-    		<div id='info'>
-				<p id="game-status"></p>
-				<p id="ammo-count"></p>
-				<p id="houseHP"></p>
+					<p id="ammo-count">5</p>
+			  	</div>
+			  	<div class="health_wrapper">
+			  		<div style="display: inline-block;">
+			  			<img class="picture health_status" src="assets/health.png">
+					</div>
+					<p id="health-soldier">100</p>
+
+			  	</div>
+			  	<div class="house_wrapper">
+				  	<div style="display: inline-block;">
+				  		<img class="picture house_status" src="assets/house.png">			  		
+				  	</div>
+					<p id="health-house"></p>
+			  	</div>
+			  </div>
+			  </div>
 			</div>
+
+    		<div id="loadingtext">Loading world...</div>
+			
+			<div id='info'>
+				<p id="game-status">Running</p>
+				<p id="bomb-counter"></p>
+			</div>
+
+
 			
 			<a href="./"><- Back</a>
 		</div>
