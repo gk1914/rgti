@@ -523,7 +523,7 @@ function drawOBJ(obj,texture){
 //
 // animate
 //
-// Called every time before redrawing the screen.
+// Called every time before redeawing the screen.
 //
 function animate() {
   
@@ -549,10 +549,10 @@ function animate() {
 
     // collision detection --> soldier & house
 	var io = bodysMY[0];
-    io.setPosition([meshes[0].position[0]+xPosition,meshes[0].position[1],meshes[0].position[2]+zPosition]);
-    collision = io.detectCollision(bodysMY[1]);
-    if(collision != null){
-      if (speedForward != 0 && speedSide != 0) {
+    io.setPosition([meshes[0].position[0]+xPosition,meshes[0].position[1],meshes[0].position[2]+zPosition+7.5]);		// | offseting zaradi perspektive
+    collision = io.detectCollision(bodysMY[1]);																			// | ker sva sla iz 45stopinj na 60stopinj, je zdaj player & bullet po Z osi transliran drugače,
+    if(collision != null){																								// | zato: [namest -1.5 je +6 --> 6-(-1.5)=7.5 --> tu popravimo Z position za 7.5] 
+      if (speedForward != 0 && speedSide != 0) {																		// ---------------------------------------------------------------------------------------------
         zPosition = currentZ;
         xPosition = currentX;
       }else if(speedForward != 0){
@@ -561,8 +561,9 @@ function animate() {
         xPosition = currentX;
       }
     }
+	io.setPosition([io.position[0],io.position[1],io.position[2]-7.5]);													// offseting zaradi perspektive - restore
 	
-    // collision detection --> soldier & rocks
+	// collision detection --> soldier & rocks										
 	for (var i = 0; i < rocks.length; i++) {
 	  collision = collisionCheck(bodysMY[0], rocks[i], 1.25);
 	  if(collision){
@@ -576,25 +577,38 @@ function animate() {
         }
       }
 	}
+	
+	// bounds
+	if (Math.abs(xPosition) > 29 || Math.abs(zPosition+6) > 29) {
+        if (speedForward != 0 && speedSide != 0) {
+          zPosition = currentZ;
+          xPosition = currentX;
+        }else if(speedForward != 0){
+          zPosition = currentZ;        
+        }else{
+          xPosition = currentX;
+        }
+    }
     bodysMY[0].setPosition([xPosition,bodysMY[0].position[1],zPosition]);
-  
-    // update the game timer
+	
+	 // update the game timer
     timer += elapsed;
   }
   lastTime = timeNow;
-
   
   // ammo
   if (!ammoActive && timeNow - lastAmmoPickup > ammoSpawnInterval) {
 	spawnAmmo();
+	console.log("spanw ammo");  
   }
-  if (ammoActive && distance([xPosition, zPosition+6], [ammo.position[0], ammo.position[2]]) < 1) {
+  if (ammoActive && distance([xPosition, zPosition+6], [ammo.position[0], ammo.position[2]]) < 0.5) {
 	lastAmmoPickup = timeNow;
     ammoCount += 5;
-	document.getElementById("ammo-count").innerHTML = "Municija: " + ammoCount;
+	document.getElementById("ammo-count").innerHTML = ammoCount;
 	ammoActive = false;
     playAmmoPickup();
   }
+  
   // bombs
   if (timeNow - lastSpawn > spawnInterval) {
     if (lastSpawn != 0) 
@@ -621,6 +635,7 @@ function animate() {
   updateOimoPhysics();
 
 }
+
 
 // Function for moving/animating bombs
 function animateBombs(elapsed) {
@@ -692,7 +707,6 @@ function distance(p1, p2) {
 	var y2 = p2[1];
 	return Math.sqrt((x1-x2)*(x1-x2) + (y1-y2)*(y1-y2));
 }
-
 
 
 
@@ -797,17 +811,7 @@ function populate() {
   ammo.size = getOBJSize(ammo);
 
   //addBomb();
-  spawnIndex = getSpawnIndex(bombSpawnPoints.length);
-  bombList.push(importOBJ(bombResponseText));
-  var tempIdx = bombList.length-1;
-  bombList[tempIdx].position = bombSpawnPoints[spawnIndex].slice();
-  bombList[tempIdx].rotation = [0,0,0];
-  bombList[tempIdx].size = bombSize;
-  bombList[tempIdx].program = bombMoveProgram[spawnIndex];
-  bombList[tempIdx].currStep = 0;
-  meshes[meshes.length] = bombList[tempIdx];
-  bodysMY[bodysMY.length] = new OBJmodel(bombList[tempIdx].size, bombList[tempIdx].position, "bomb");
- 
+  
   // rocks
   var rock1 = importOBJ(rockResponseText);
   var rock2 = importOBJ(rockResponseText);
@@ -884,8 +888,7 @@ function addBomb(){
   ibomb.size = getOBJSize(ibomb);
   meshes[meshes.length] = ibomb;
   bodysMY[bodysMY.length] = new OBJmodel(ibomb.size, ibomb.position, "bomb");
-  console.log(meshes.length);
-
+  
   return ibomb;
 }
 
@@ -916,35 +919,41 @@ function updateOimoPhysics() {
     }
 
 
+	
+//
+// Collision detection
 function checkCollisions(){
     // Soldier vs Bombs
   for (var i = 0; i < bombList.length; i++) {
     //if(bodysMY[0].detectCollision(getBombBody(i)) != null){
 	if (collisionCheck(bodysMY[0], getBombBody(i), 0.75)) {
-      //Soldier dies     --> TODO: soldier HP <--
-      destroyBomb(i);   
+	  destroyBomb(i); 
+      //Soldier dies     --> TODO: soldier HP <--  
+	  playerHP -= 10;
+	  document.getElementById("health-soldier").innerHTML = playerHP;
     }
   }
 
   //House vs Bombs
   for (var j = 0; j < bombList.length; j++) {
-      //if(bodysMY[1].detectCollision(getBombBody(j)) != null){
-	  if (collisionCheck(bodysMY[1], getBombBody(j), 5)){
-        destroyBomb(j);   
-		houseHP--;
-		document.getElementById("houseHP").innerHTML = "HP hise :" + houseHP;
-		if (houseHP == 0) {
-		  document.getElementById("game-status").innerHTML = "GAME OVER!";
-		  gameActive = false;
-		}
-      }
+    if(bodysMY[1].detectCollision(getBombBody(j)) != null){
+	//if (collisionCheck(bodysMY[1], getBombBody(j), 5)){
+      destroyBomb(j);   
+	  houseHP -= 100;
+	  document.getElementById("health-house").innerHTML = houseHP
+	  if (houseHP == 0) {
+		document.getElementById("game-status").innerHTML = "GAME OVER!";
+		gameActive = false;
+	  }
+    }
   }
 
   //Bullet vs Bombs
   for (var j = 0; j < bombList.length; j++) {
-    //console.log(bulletBody);
-	if (fire && collisionCheck(bulletBody, getBombBody(j), 0.5)) {
+    if (fire && collisionCheck(bulletBody, getBombBody(j), 0.5)) {
       destroyBomb(j);
+	  bombsKilled++;
+	  document.getElementById("bomb-counter").innerHTML = "Bombs destroyed: " + bombsKilled;
 	  fire = false;
     }
   }
@@ -959,6 +968,7 @@ function checkCollisions(){
   
 }
 
+//
 // Moja funkcija za collision detection med telesoma body1 & body2  [primitivna -> gleda samo 2 dimenziji in računa razdaljo med centroma (zato uporabna samo za kvadratne/okorgle objekte)]
 function collisionCheck(body1, body2, dist) {
 	var originIsPlayer = 0;
@@ -978,10 +988,17 @@ function collisionCheck(body1, body2, dist) {
 // Called when the canvas is created to get the ball rolling.
 // Figuratively, that is. There's nothing moving in this demo.
 //
+
+function initHUD(){
+  $("#container").css("width", $("#glcanvas").width());
+  $("#container").css("height", $("#glcanvas").height());
+}
+
 function start() {
   canvas = document.getElementById("glcanvas");
   infos = document.getElementById("info");
   //mouse movement listner
+  initHUD();
   canvas.addEventListener("mousemove", function(evt) {
       var xMouse = evt.offsetX || (evt.pageX - canvas.offsetLeft);
       var yMouse = evt.offsetY || (evt.pageY - canvas.offsetTop);
@@ -996,7 +1013,7 @@ function start() {
 		lastFire = currTime;
 		fire = true;
 		ammoCount--;
-		document.getElementById("ammo-count").innerHTML = "Municija: " + ammoCount;
+		document.getElementById("ammo-count").innerHTML = ammoCount;
 		bulletMesh.xBulletPosition = xPosition;
 		bulletMesh.zBulletPosition = zPosition;
 		bulletMesh.bulletRot = rotMouse;
@@ -1034,8 +1051,9 @@ function start() {
     playAmbientAudio();
 	
 	document.getElementById("game-status").innerHTML = "Game running.....";
-	document.getElementById("ammo-count").innerHTML = "Municija: " + ammoCount;
-	document.getElementById("houseHP").innerHTML = "HP hise: " + houseHP;
+	document.getElementById("health-house").innerHTML = houseHP;
+	document.getElementById("health-soldier").innerHTML = playerHP;
+	document.getElementById("bomb-counter").innerHTML = "Bombs destroyed: " + bombsKilled;
 	
   setTimeout(
     function() 
@@ -1049,9 +1067,9 @@ function start() {
       
       // Set up to draw the scene periodically.
       var intervalID = setInterval(function() {
-        if (!gameActive)
+		if (!gameActive)
 			clearInterval(intervalID);
-		requestAnimationFrame(animate);
+        requestAnimationFrame(animate);
         handleKeys();
 		if (timer > 30000) {
 			document.getElementById("game-status").innerHTML = "GAME OVER!";
