@@ -437,6 +437,7 @@ function drawScene() {
 
     drawOBJ(rockMesh,rockTexture);
 
+
   }
 
   for (var i = 0; i < meshes.length; i++) {
@@ -472,7 +473,9 @@ function drawScene() {
     //console.log("FIRE");
     mvPopMatrix();
     mvPushMatrix();
+
     mat4.translate(mvMatrix, [bulletMesh.xBulletPosition, 2.25, bulletMesh.zBulletPosition+6]);
+
     mat4.rotate(mvMatrix, degToRad(bulletMesh.bulletRot), [0, -1, 0]);
 
     drawOBJ(bulletMesh,bulletTexture);
@@ -525,6 +528,8 @@ function drawOBJ(obj,texture){
 //
 // Called every time before redeawing the screen.
 //
+
+
 function animate() {
   
   var currentX = xPosition;
@@ -547,12 +552,14 @@ function animate() {
       clickedX == true;
     }
 
+
     // collision detection --> soldier & house
 	var io = bodysMY[0];
     io.setPosition([meshes[0].position[0]+xPosition,meshes[0].position[1],meshes[0].position[2]+zPosition+7.5]);		// | offseting zaradi perspektive
     collision = io.detectCollision(bodysMY[1]);																			// | ker sva sla iz 45stopinj na 60stopinj, je zdaj player & bullet po Z osi transliran drugače,
     if(collision != null){																								// | zato: [namest -1.5 je +6 --> 6-(-1.5)=7.5 --> tu popravimo Z position za 7.5] 
       if (speedForward != 0 && speedSide != 0) {																		// ---------------------------------------------------------------------------------------------
+
         zPosition = currentZ;
         xPosition = currentX;
       }else if(speedForward != 0){
@@ -561,6 +568,7 @@ function animate() {
         xPosition = currentX;
       }
     }
+
 	io.setPosition([io.position[0],io.position[1],io.position[2]-7.5]);													// offseting zaradi perspektive - restore
 	
 	// collision detection --> soldier & rocks										
@@ -593,6 +601,7 @@ function animate() {
 	
 	 // update the game timer
     timer += elapsed;
+
   }
   lastTime = timeNow;
   
@@ -606,9 +615,12 @@ function animate() {
     ammoCount += 5;
 	document.getElementById("ammo-count").innerHTML = ammoCount;
 	ammoActive = false;
+
     playAmmoPickup();
+
+  playAmmoPickup();
+
   }
-  
   // bombs
   if (timeNow - lastSpawn > spawnInterval) {
     if (lastSpawn != 0) 
@@ -629,7 +641,7 @@ function animate() {
 	fire = false;
   }
   
-  
+
   checkCollisions();
     
   updateOimoPhysics();
@@ -811,7 +823,7 @@ function populate() {
   ammo.size = getOBJSize(ammo);
 
   //addBomb();
-  
+
   // rocks
   var rock1 = importOBJ(rockResponseText);
   var rock2 = importOBJ(rockResponseText);
@@ -867,6 +879,7 @@ function populate() {
   rock8 = new OBJmodel(rockSize, rock8.position, "rock");
   rock9 = new OBJmodel(rockSize, rock9.position, "rock");
   rock10 = new OBJmodel(rockSize, rock10.position, "rock");
+
   rocks[0] = rock1;
   rocks[1] = rock2;
   rocks[2] = rock3;
@@ -877,6 +890,7 @@ function populate() {
   rocks[7] = rock8;
   rocks[8] = rock9;
   rocks[9] = rock10;
+
 
 }
 
@@ -919,7 +933,7 @@ function updateOimoPhysics() {
     }
 
 
-	
+
 //
 // Collision detection
 function checkCollisions(){
@@ -931,11 +945,13 @@ function checkCollisions(){
       //Soldier dies     --> TODO: soldier HP <--  
 	  playerHP -= 10;
 	  document.getElementById("health-soldier").innerHTML = playerHP;
+
     }
   }
 
   //House vs Bombs
   for (var j = 0; j < bombList.length; j++) {
+
     if(bodysMY[1].detectCollision(getBombBody(j)) != null){
 	//if (collisionCheck(bodysMY[1], getBombBody(j), 5)){
       destroyBomb(j);   
@@ -977,6 +993,7 @@ function collisionCheck(body1, body2, dist) {
 	var p1 = [body1.position[0], body1.position[2]+originIsPlayer];
 	var p2 = [body2.position[0], body2.position[2]];
 	return distance(p1, p2) < dist;
+
 }
 
 
@@ -1049,12 +1066,12 @@ function start() {
     // Initialise world objects
     loadObjects();
     playAmbientAudio();
-	
+
 	document.getElementById("game-status").innerHTML = "Game running.....";
 	document.getElementById("health-house").innerHTML = houseHP;
 	document.getElementById("health-soldier").innerHTML = playerHP;
 	document.getElementById("bomb-counter").innerHTML = "Bombs destroyed: " + bombsKilled;
-	
+
   setTimeout(
     function() 
     {

@@ -99,7 +99,6 @@ var ammoSpawnPoints = [
 	[-10,0,0],
 	[5,0,-12],
 	[-5,0,-10]];
-	
 //
 // Nature
 var rocks;
@@ -113,4 +112,3 @@ var houseHP = 1000;
 var playerHP = 100;
 var bombsKilled = 0;
 var gameActive = true;
-

@@ -84,6 +84,7 @@ function loadRock1() {
       rockMesh = importOBJ(request.responseText);
 	  rockResponseText = request.responseText;
 	  rockSize = getOBJSize(rockMesh);
+
     }
   }
   request.send();
