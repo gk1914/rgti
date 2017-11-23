@@ -66,7 +66,7 @@ function getShader(gl, id) {
   var currentChild = shaderScript.firstChild;
   while (currentChild) {
     if (currentChild.nodeType == 3) {
-        shaderSource += currentChild.textContent;
+      shaderSource += currentChild.textContent;
     }
     currentChild = currentChild.nextSibling;
   }
@@ -205,13 +205,13 @@ function handleLoadedWorld(data) {
   }
 
   var vertexNormalsCoords = [
-       0.0,  0.0,  1.0,
-       0.0,  0.0,  1.0,
-       0.0,  0.0,  1.0,
+  0.0,  0.0,  1.0,
+  0.0,  0.0,  1.0,
+  0.0,  0.0,  1.0,
 
-       0.0,  0.0,  1.0,
-       0.0,  0.0,  1.0,
-       0.0,  0.0,  1.0
+  0.0,  0.0,  1.0,
+  0.0,  0.0,  1.0,
+  0.0,  0.0,  1.0
   ];
 
   worldVertexPositionBuffer = gl.createBuffer();
@@ -412,7 +412,7 @@ function drawScene() {
 
   setMatrixUniforms();
   gl.drawArrays(gl.TRIANGLES, 0, worldVertexPositionBuffer.numItems);
- 
+
   // ^^^^^^^
   //  WORLD
   
@@ -483,13 +483,13 @@ function drawScene() {
   
   // draw ammo
   if (ammoActive) {
-	mvPopMatrix();
-    mvPushMatrix();
-    mat4.translate(mvMatrix, ammo.position);
+   mvPopMatrix();
+   mvPushMatrix();
+   mat4.translate(mvMatrix, ammo.position);
 
-    drawOBJ(ammo,ammoTexture);
-  }
-  
+   drawOBJ(ammo,ammoTexture);
+ }
+
 }
 
 
@@ -531,7 +531,7 @@ function drawOBJ(obj,texture){
 
 
 function animate() {
-  
+
   var currentX = xPosition;
   var currentZ = zPosition;
 
@@ -554,7 +554,7 @@ function animate() {
 
 
     // collision detection --> soldier & house
-	var io = bodysMY[0];
+    var io = bodysMY[0];
     io.setPosition([meshes[0].position[0]+xPosition,meshes[0].position[1],meshes[0].position[2]+zPosition+7.5]);		// | offseting zaradi perspektive
     collision = io.detectCollision(bodysMY[1]);																			// | ker sva sla iz 45stopinj na 60stopinj, je zdaj player & bullet po Z osi transliran drugače,
     if(collision != null){																								// | zato: [namest -1.5 je +6 --> 6-(-1.5)=7.5 --> tu popravimo Z position za 7.5] 
@@ -573,78 +573,78 @@ function animate() {
 	
 	// collision detection --> soldier & rocks										
 	for (var i = 0; i < rocks.length; i++) {
-	  collision = collisionCheck(bodysMY[0], rocks[i], 1.25);
-	  if(collision){
-        if (speedForward != 0 && speedSide != 0) {
-          zPosition = currentZ;
-          xPosition = currentX;
-        }else if(speedForward != 0){
-          zPosition = currentZ;        
-        }else{
-          xPosition = currentX;
-        }
-      }
-	}
-	
+   collision = collisionCheck(bodysMY[0], rocks[i], 1.25);
+   if(collision){
+    if (speedForward != 0 && speedSide != 0) {
+      zPosition = currentZ;
+      xPosition = currentX;
+    }else if(speedForward != 0){
+      zPosition = currentZ;        
+    }else{
+      xPosition = currentX;
+    }
+  }
+}
+
 	// bounds
 	if (Math.abs(xPosition) > 29 || Math.abs(zPosition+6) > 29) {
-        if (speedForward != 0 && speedSide != 0) {
-          zPosition = currentZ;
-          xPosition = currentX;
-        }else if(speedForward != 0){
-          zPosition = currentZ;        
-        }else{
-          xPosition = currentX;
-        }
+    if (speedForward != 0 && speedSide != 0) {
+      zPosition = currentZ;
+      xPosition = currentX;
+    }else if(speedForward != 0){
+      zPosition = currentZ;        
+    }else{
+      xPosition = currentX;
     }
-    bodysMY[0].setPosition([xPosition,bodysMY[0].position[1],zPosition]);
-	
+  }
+  bodysMY[0].setPosition([xPosition,bodysMY[0].position[1],zPosition]);
+
 	 // update the game timer
+   if(gameActive)
     timer += elapsed;
 
-  }
-  lastTime = timeNow;
-  
+}
+lastTime = timeNow;
+
   // ammo
   if (!ammoActive && timeNow - lastAmmoPickup > ammoSpawnInterval) {
-	spawnAmmo();
-	console.log("spanw ammo");  
-  }
-  if (ammoActive && distance([xPosition, zPosition+6], [ammo.position[0], ammo.position[2]]) < 0.5) {
-	lastAmmoPickup = timeNow;
-    ammoCount += 5;
-	document.getElementById("ammo-count").innerHTML = ammoCount;
-	ammoActive = false;
+   spawnAmmo();
+   console.log("spanw ammo");  
+ }
+ if (ammoActive && distance([xPosition, zPosition+6], [ammo.position[0], ammo.position[2]]) < 0.5) {
+   lastAmmoPickup = timeNow;
+   ammoCount += 5;
+   document.getElementById("ammo-count").innerHTML = ammoCount;
+   ammoActive = false;
 
-    playAmmoPickup();
+   playAmmoPickup();
 
-  playAmmoPickup();
 
-  }
+ }
   // bombs
   if (timeNow - lastSpawn > spawnInterval) {
     if (lastSpawn != 0) 
-	  spawnBombs();
-	lastSpawn = timeNow;
-  }
-  updateBombDirection();
-  animateBombs(elapsed);
-	
+     spawnBombs();
+   lastSpawn = timeNow;
+ }
+ updateBombDirection();
+ animateBombs(elapsed);
+
   // bullet
   if (fire) {
-	var angle = degToRad(bulletMesh.bulletRot);
-	bulletMesh.xBulletPosition -= Math.sin(angle)*bulletSpeed;
-	bulletMesh.zBulletPosition -= Math.cos(angle)*(-bulletSpeed);
-	bulletBody.setPosition([bulletMesh.xBulletPosition, 2.25, bulletMesh.zBulletPosition]);
-  }
-  if (timeNow - lastFire > bulletLifetime) {
-	fire = false;
-  }
-  
+   var angle = degToRad(bulletMesh.bulletRot);
+   bulletMesh.xBulletPosition -= Math.sin(angle)*bulletSpeed;
+   bulletMesh.zBulletPosition -= Math.cos(angle)*(-bulletSpeed);
+   bulletBody.setPosition([bulletMesh.xBulletPosition, 2.25, bulletMesh.zBulletPosition]);
+ }
+ if (timeNow - lastFire > bulletLifetime) {
+   fire = false;
+ }
 
-  checkCollisions();
-    
-  updateOimoPhysics();
+
+ checkCollisions();
+
+ updatePhysics();
 
 }
 
@@ -671,6 +671,14 @@ function spawnBombs() {
   bombList[tempIdx].currStep = 0;
   meshes[meshes.length] = bombList[tempIdx];
   bodysMY[bodysMY.length] = new OBJmodel(bombList[tempIdx].size, bombList[tempIdx].position, "bomb");
+}
+
+function removeAllBombs(){
+  for (var i = 0; i < bombList.length; i++) {
+    bombList.splice(i,1);
+    meshes.splice(i+2,1);
+    bodysMY.splice(i+2,1);
+  }
 }
 
 function getSpawnIndex(upTo) {
@@ -780,11 +788,11 @@ function mouseRotation(x,y){
 }
 //get angle
 function angle(a1, a2, b1, b2) {
-    
-    theta = Math.atan2(b1 - a1, a2 - b2);
-    if (theta < 0.0)
-        theta += 2*Math.PI
-    return theta/ Math.PI * 180;
+
+  theta = Math.atan2(b1 - a1, a2 - b2);
+  if (theta < 0.0)
+    theta += 2*Math.PI
+  return theta/ Math.PI * 180;
 }
 
 
@@ -794,105 +802,6 @@ function initPhy() {
   populate();
 }
 
-var meshes = [];
-var meshesPositions = [];
-var bodysMY = [];
-var rocks = [];
-var infos;
-var rock;
-function populate() {
-  //soldier
-  mesh.position = [0,0,0];
-  mesh.rotation = [0,0,0];
-  mesh.size = getOBJSize(mesh);
-  meshes[0] = mesh;
-
-  bodysMY[0] = new OBJmodel(mesh.size, mesh.position, "soldier");
-
-  //house
-  house.position = [10,0,10];
-  house.rotation = [0,0,0];
-  house.size = getOBJSize(house); 
-  meshes[1] = house;
-
-  bodysMY[1] = new OBJmodel(house.size, house.position, "house");
-
-  // ammo
-  ammo.position = [10,0,-10];
-  ammo.rotation = [0,0,0];
-  ammo.size = getOBJSize(ammo);
-
-  //addBomb();
-
-  // rocks
-  var rock1 = importOBJ(rockResponseText);
-  var rock2 = importOBJ(rockResponseText);
-  var rock3 = importOBJ(rockResponseText);
-  var rock4 = importOBJ(rockResponseText);
-  var rock5 = importOBJ(rockResponseText);
-  var rock6 = importOBJ(rockResponseText);
-  var rock7 = importOBJ(rockResponseText);
-  var rock8 = importOBJ(rockResponseText);
-  var rock9 = importOBJ(rockResponseText);
-  var rock10 = importOBJ(rockResponseText);
-  rock1.position = [10,0,-4];
-  // spodaj levo
-  rock2.position = [-20,0,3];
-  rock3.position = [-16,0,12];
-  rock4.position = [2,0,27];
-  rock5.position = [-22,0,22];
-  rock6.position = [-10,0,18];
-  zeros = [0, 0, 0];
-  rock1.rotation = zeros;
-  rock2.rotation = zeros;
-  rock3.rotation = zeros;
-  rock4.rotation = zeros;
-  rock5.rotation = zeros;
-  rock6.rotation = zeros;
-  // zgoraj levo
-  rock7.position = [-5,0,-10];
-  rock8.position = [0,0,-12];
-  rock9.position = [-15,0,-22];
-  rock7.rotation = zeros;
-  rock8.rotation = zeros;
-  rock9.rotation = zeros;
-  //desno
-  rock10.position = [22,0,-22];
-  rock10.rotation = zeros;
-  rock1.size = rockSize;
-  rock2.size = rockSize;
-  rock3.size = rockSize;
-  rock4.size = rockSize;
-  rock5.size = rockSize;
-  rock6.size = rockSize;
-  rock7.size = rockSize;
-  rock8.size = rockSize;
-  rock9.size = rockSize;
-  rock10.size = rockSize;
-  rock1 = new OBJmodel(rock1.size, rock1.position, "rock");
-  rock2 = new OBJmodel(rock2.size, rock2.position, "rock");
-  rock3 = new OBJmodel(rock3.size, rock3.position, "rock");
-  rock4 = new OBJmodel(rock4.size, rock4.position, "rock");
-  rock5 = new OBJmodel(rock5.size, rock5.position, "rock");
-  rock6 = new OBJmodel(rock6.size, rock6.position, "rock");
-  rock7 = new OBJmodel(rockSize, rock7.position, "rock");
-  rock8 = new OBJmodel(rockSize, rock8.position, "rock");
-  rock9 = new OBJmodel(rockSize, rock9.position, "rock");
-  rock10 = new OBJmodel(rockSize, rock10.position, "rock");
-
-  rocks[0] = rock1;
-  rocks[1] = rock2;
-  rocks[2] = rock3;
-  rocks[3] = rock4;
-  rocks[4] = rock5;
-  rocks[5] = rock6;
-  rocks[6] = rock7;
-  rocks[7] = rock8;
-  rocks[8] = rock9;
-  rocks[9] = rock10;
-
-
-}
 
 // ?? zdej že useless metoda ??
 function addBomb(){
@@ -919,18 +828,18 @@ function spawnAmmo() {
 }
 
 
-function updateOimoPhysics() {
-        var collision, imesh, bodyMY, moveX, moveZ, i = bodysMY.length;
-        while (i--){
-            bodyMY = bodysMY[i];
-            imesh = meshes[i];
-            
-            if (i == 0){
-                bodysMY[0].setPosition([imesh.position[0]+xPosition,imesh.position[1],imesh.position[2]+zPosition]);                
-            }
-        }
-        drawScene();
+function updatePhysics() {
+  var collision, imesh, bodyMY, moveX, moveZ, i = bodysMY.length;
+  while (i--){
+    bodyMY = bodysMY[i];
+    imesh = meshes[i];
+
+    if (i == 0){
+      bodysMY[0].setPosition([imesh.position[0]+xPosition,imesh.position[1],imesh.position[2]+zPosition]);                
     }
+  }
+  drawScene();
+}
 
 
 
@@ -938,13 +847,13 @@ function updateOimoPhysics() {
 // Collision detection
 function checkCollisions(){
     // Soldier vs Bombs
-  for (var i = 0; i < bombList.length; i++) {
+    for (var i = 0; i < bombList.length; i++) {
     //if(bodysMY[0].detectCollision(getBombBody(i)) != null){
-	if (collisionCheck(bodysMY[0], getBombBody(i), 0.75)) {
-	  destroyBomb(i); 
+     if (collisionCheck(bodysMY[0], getBombBody(i), 0.75)) {
+       destroyBomb(i); 
       //Soldier dies     --> TODO: soldier HP <--  
-	  playerHP -= 10;
-	  document.getElementById("health-soldier").innerHTML = playerHP;
+      playerHP -= 10;
+      document.getElementById("health-soldier").innerHTML = playerHP;
 
     }
   }
@@ -954,31 +863,31 @@ function checkCollisions(){
 
     if(bodysMY[1].detectCollision(getBombBody(j)) != null){
 	//if (collisionCheck(bodysMY[1], getBombBody(j), 5)){
-      destroyBomb(j);   
-	  houseHP -= 100;
-	  document.getElementById("health-house").innerHTML = houseHP
-	  if (houseHP == 0) {
-		document.getElementById("game-status").innerHTML = "GAME OVER!";
-		gameActive = false;
-	  }
+    destroyBomb(j);   
+    houseHP -= 100;
+    document.getElementById("health-house").innerHTML = houseHP
+    if (houseHP == 0) {
+      document.getElementById("game-status").innerHTML = "GAME OVER!";
+      gameActive = false;
     }
   }
+}
 
   //Bullet vs Bombs
   for (var j = 0; j < bombList.length; j++) {
     if (fire && collisionCheck(bulletBody, getBombBody(j), 0.5)) {
       destroyBomb(j);
-	  bombsKilled++;
-	  document.getElementById("bomb-counter").innerHTML = "Bombs destroyed: " + bombsKilled;
-	  fire = false;
+      bombsKilled++;
+      document.getElementById("bomb-counter").innerHTML = "Bombs destroyed: " + bombsKilled;
+      fire = false;
     }
   }
   
   //Bullet vs Nature (rocks, trees)
   for (var j = 0; j < rocks.length; j++) {
      // --> TODO <--
-  }
-  
+   }
+
   //Bullet vs House
   // --> TODO <--
   
@@ -1014,39 +923,41 @@ function initHUD(){
 function start() {
   canvas = document.getElementById("glcanvas");
   infos = document.getElementById("info");
+  $("#overlay-gameover").hide();
+  $("#restart-wrapper").hide();
   //mouse movement listner
   initHUD();
   canvas.addEventListener("mousemove", function(evt) {
-      var xMouse = evt.offsetX || (evt.pageX - canvas.offsetLeft);
-      var yMouse = evt.offsetY || (evt.pageY - canvas.offsetTop);
+    var xMouse = evt.offsetX || (evt.pageX - canvas.offsetLeft);
+    var yMouse = evt.offsetY || (evt.pageY - canvas.offsetTop);
     mouseRotation(xMouse,yMouse);
-      }, false
-      );
+  }, false
+  );
   //mouse click listener
   canvas.addEventListener("mousedown", function(evt) {
     console.log("cscscsc");
-	var currTime = new Date().getTime();
-	if ((currTime - lastFire > fireCooldown || lastFire == 0) && ammoCount > 0) {
-		lastFire = currTime;
-		fire = true;
-		ammoCount--;
-		document.getElementById("ammo-count").innerHTML = ammoCount;
-		bulletMesh.xBulletPosition = xPosition;
-		bulletMesh.zBulletPosition = zPosition;
-		bulletMesh.bulletRot = rotMouse;
+    var currTime = new Date().getTime();
+    if ((currTime - lastFire > fireCooldown || lastFire == 0) && ammoCount > 0) {
+      lastFire = currTime;
+      fire = true;
+      ammoCount--;
+      document.getElementById("ammo-count").innerHTML = ammoCount;
+      bulletMesh.xBulletPosition = xPosition;
+      bulletMesh.zBulletPosition = zPosition;
+      bulletMesh.bulletRot = rotMouse;
 		// nastavi vrednosti za body, po "kreaciji" novega metka
 		/*bullet.position = [xPosition,0,zPosition];
 		bullet.rotation = rotMouse;
 		bullet.size = getOBJSize(bullet);*/
 		bulletBody = new OBJmodel(getOBJSize(bulletMesh), [xPosition,2.25,zPosition], "bullet");
 
-	playShot();
-    }
-    if(ammoCount == 0){
-      playEmptyPickup();
-    } 
-      }, false
-  );
+   playShot();
+ }
+ if(ammoCount == 0){
+  playEmptyPickup();
+} 
+}, false
+);
   
     gl = initGL(canvas);      // Initialize the GL context
 
@@ -1066,16 +977,16 @@ function start() {
     // Initialise world objects
     loadObjects();
     playAmbientAudio();
+    playStartingSound();
 
-	document.getElementById("game-status").innerHTML = "Game running.....";
-	document.getElementById("health-house").innerHTML = houseHP;
-	document.getElementById("health-soldier").innerHTML = playerHP;
-	document.getElementById("bomb-counter").innerHTML = "Bombs destroyed: " + bombsKilled;
-
-  setTimeout(
-    function() 
-    {
-    initPhy();
+    document.getElementById("game-status").innerHTML = "Game running.....";
+    document.getElementById("health-house").innerHTML = houseHP;
+    document.getElementById("health-soldier").innerHTML = playerHP;
+    document.getElementById("bomb-counter").innerHTML = "Bombs destroyed: " + bombsKilled;
+    setTimeout(
+      function() 
+      {
+        initPhy();
 
       //console.log(getOBJSize(mesh));
       // Bind keyboard handling functions to document handlers
@@ -1084,15 +995,50 @@ function start() {
       
       // Set up to draw the scene periodically.
       var intervalID = setInterval(function() {
-		if (!gameActive)
-			clearInterval(intervalID);
-        requestAnimationFrame(animate);
-        handleKeys();
-		if (timer > 30000) {
-			document.getElementById("game-status").innerHTML = "GAME OVER!";
-			gameActive = false;
-		}
-      }, 1000/60);
+        if (!gameActive)
+         clearInterval(intervalID);
+       requestAnimationFrame(animate);
+       handleKeys();
+       setTimer(timer);
+       if (timer > endTime) {
+        showEnd();
+
+      }
+    }, 1000/60);
     }, 500);
   }
+}
+
+function restartGame(){
+  $("#overlay-gameover").hide();
+  $("#restart-wrapper").hide();
+  gameActive = true;
+  playStartingSound();
+  removeAllBombs();
+  //Restart position, counters, hide GAME OVER text
+  timer = 0;
+  houseHP = 1000;
+  playerHP = 100;
+  bombsKilled = 0;
+  ammoCount = 5;
+  xPosition = 0;
+  zPosition = 0;
+  document.getElementById("health-house").innerHTML = houseHP;
+  document.getElementById("health-soldier").innerHTML = playerHP;
+  start();
+
+  //TODO
+  // Pozicije bombic zacnejo ob resitiranju igre na neki cudni poziciji
+  // Timer se začne odštevat preden kliknemo na Restart
+  // Nek sistem bi bilo treba za končen skor računat, na podlagi healtha solderja, hiše in kolko bombic si zadel
+}
+function showEnd(){
+  $("#overlay-gameover").show();
+  $("#restart-wrapper").show();
+  gameActive = false;
+  playEndingSound();
+}
+
+function setTimer(time){
+  $("#timer").html(Math.ceil((endTime-timer)/1000));
 }

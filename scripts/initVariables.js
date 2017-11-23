@@ -112,3 +112,12 @@ var houseHP = 1000;
 var playerHP = 100;
 var bombsKilled = 0;
 var gameActive = true;
+var endTime = 30000;
+
+
+var meshes = [];
+var meshesPositions = [];
+var bodysMY = [];
+var rocks = [];
+var infos;
+var rock;
