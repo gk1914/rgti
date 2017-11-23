@@ -387,7 +387,7 @@ function drawScene() {
 
 
 
-  mat4.rotate(mvMatrix, degToRad(45), [1, 0, 0]);
+  mat4.rotate(mvMatrix, degToRad(60), [1, 0, 0]);
   if(isCollision){
     mat4.translate(mvMatrix, [-bodysMY[0].position[0], -20, -bodysMY[0].position[2]-15]);
   }else{
@@ -437,6 +437,7 @@ function drawScene() {
 
     drawOBJ(rockMesh,rockTexture);
 
+
   }
 
   for (var i = 0; i < meshes.length; i++) {
@@ -450,7 +451,7 @@ function drawScene() {
       //soldier
 
       //mat4.translate(mvMatrix, meshes[i].position);
-      mat4.translate(mvMatrix, [bodysMY[i].position[0], bodysMY[i].position[1], bodysMY[i].position[2]-1.5]);
+      mat4.translate(mvMatrix, [bodysMY[i].position[0], bodysMY[i].position[1], bodysMY[i].position[2]+6]);
       mat4.rotate(mvMatrix, degToRad(rotMouse), [0, -1, 0]);
       drawOBJ(mesh,midTexture);
 
@@ -472,7 +473,9 @@ function drawScene() {
     //console.log("FIRE");
     mvPopMatrix();
     mvPushMatrix();
-    mat4.translate(mvMatrix, [bulletMesh.xBulletPosition, 2.25, bulletMesh.zBulletPosition-1.5]);
+
+    mat4.translate(mvMatrix, [bulletMesh.xBulletPosition, 2.25, bulletMesh.zBulletPosition+6]);
+
     mat4.rotate(mvMatrix, degToRad(bulletMesh.bulletRot), [0, -1, 0]);
 
     drawOBJ(bulletMesh,bulletTexture);
@@ -519,6 +522,7 @@ function drawOBJ(obj,texture){
 }
 
 
+
 //
 // animate
 //
@@ -548,11 +552,14 @@ function animate() {
       clickedX == true;
     }
 
-    var io = new OBJmodel(bodysMY[0].size,bodysMY[0].position,"");
-    io.setPosition([meshes[0].position[0]+xPosition,meshes[0].position[1],meshes[0].position[2]+zPosition]);
-    collision = io.detectCollision(bodysMY[1]);
-    if(collision != null){
-      if (speedForward != 0 && speedSide != 0) {
+
+    // collision detection --> soldier & house
+	var io = bodysMY[0];
+    io.setPosition([meshes[0].position[0]+xPosition,meshes[0].position[1],meshes[0].position[2]+zPosition+7.5]);		// | offseting zaradi perspektive
+    collision = io.detectCollision(bodysMY[1]);																			// | ker sva sla iz 45stopinj na 60stopinj, je zdaj player & bullet po Z osi transliran drugače,
+    if(collision != null){																								// | zato: [namest -1.5 je +6 --> 6-(-1.5)=7.5 --> tu popravimo Z position za 7.5] 
+      if (speedForward != 0 && speedSide != 0) {																		// ---------------------------------------------------------------------------------------------
+
         zPosition = currentZ;
         xPosition = currentX;
       }else if(speedForward != 0){
@@ -561,7 +568,39 @@ function animate() {
         xPosition = currentX;
       }
     }
+
+	io.setPosition([io.position[0],io.position[1],io.position[2]-7.5]);													// offseting zaradi perspektive - restore
+	
+	// collision detection --> soldier & rocks										
+	for (var i = 0; i < rocks.length; i++) {
+	  collision = collisionCheck(bodysMY[0], rocks[i], 1.25);
+	  if(collision){
+        if (speedForward != 0 && speedSide != 0) {
+          zPosition = currentZ;
+          xPosition = currentX;
+        }else if(speedForward != 0){
+          zPosition = currentZ;        
+        }else{
+          xPosition = currentX;
+        }
+      }
+	}
+	
+	// bounds
+	if (Math.abs(xPosition) > 29 || Math.abs(zPosition+6) > 29) {
+        if (speedForward != 0 && speedSide != 0) {
+          zPosition = currentZ;
+          xPosition = currentX;
+        }else if(speedForward != 0){
+          zPosition = currentZ;        
+        }else{
+          xPosition = currentX;
+        }
+    }
     bodysMY[0].setPosition([xPosition,bodysMY[0].position[1],zPosition]);
+	
+	 // update the game timer
+    timer += elapsed;
 
   }
   lastTime = timeNow;
@@ -571,18 +610,21 @@ function animate() {
 	spawnAmmo();
 	console.log("spanw ammo");  
   }
-  if (ammoActive && distance([xPosition, zPosition-1.5], [ammo.position[0], ammo.position[2]]) < 1) {
-	  console.log("sdhsgh");
+  if (ammoActive && distance([xPosition, zPosition+6], [ammo.position[0], ammo.position[2]]) < 0.5) {
 	lastAmmoPickup = timeNow;
     ammoCount += 5;
 	document.getElementById("ammo-count").innerHTML = ammoCount;
 	ammoActive = false;
+
+    playAmmoPickup();
+
   playAmmoPickup();
+
   }
   // bombs
   if (timeNow - lastSpawn > spawnInterval) {
-  if (lastSpawn != 0) 
-	spawnBombs();
+    if (lastSpawn != 0) 
+	  spawnBombs();
 	lastSpawn = timeNow;
   }
   updateBombDirection();
@@ -595,27 +637,24 @@ function animate() {
 	bulletMesh.zBulletPosition -= Math.cos(angle)*(-bulletSpeed);
 	bulletBody.setPosition([bulletMesh.xBulletPosition, 2.25, bulletMesh.zBulletPosition]);
   }
-  if (timeNow - lastFire > bulletLifetime)
-  {
+  if (timeNow - lastFire > bulletLifetime) {
 	fire = false;
   }
   
+
   checkCollisions();
     
-
   updateOimoPhysics();
 
 }
 
+
+// Function for moving/animating bombs
 function animateBombs(elapsed) {
 	for (var i = 0; i < bombList.length; i++) {
 		bombList[i].position[0] += bombSpeed * elapsed * bombList[i].direction[0];
 		bombList[i].position[2] += bombSpeed * elapsed * bombList[i].direction[1];
 		bodysMY[i+2].setPosition(bombList[i].position);
-		/*if (i == 0) {
-			console.log(bombList[i].position[0]);
-			console.log(bombList[i].position[2]);
-		}*/
 	}
 }
 
@@ -646,7 +685,7 @@ function destroyBomb(i) {
 
 }
 
-// Update the direction of bombs (called every .... seconds)
+// Update the direction of bombs
 function updateBombDirection() {
 	for (var i = 2; i < meshes.length; i++) {
 		//meshes[i].direction = moveBomb([meshes[i].position[0], meshes[i].position[2]], [0, 0]);
@@ -751,8 +790,7 @@ function angle(a1, a2, b1, b2) {
 
 
 
-function initPhy(){
-
+function initPhy() {
   populate();
 }
 
@@ -780,36 +818,83 @@ function populate() {
   bodysMY[1] = new OBJmodel(house.size, house.position, "house");
 
   // ammo
-  ammo.position = [10,0,-5];
+  ammo.position = [10,0,-10];
   ammo.rotation = [0,0,0];
   ammo.size = getOBJSize(ammo);
-  //meshes[]...
 
   //addBomb();
 
-  rock1 = new OBJmodel(house.size, house.position, "rock");
-  rock2 = new OBJmodel(house.size, house.position, "rock");
-  rock3 = new OBJmodel(house.size, house.position, "rock");
-  rock4 = new OBJmodel(house.size, house.position, "rock");
+  // rocks
+  var rock1 = importOBJ(rockResponseText);
+  var rock2 = importOBJ(rockResponseText);
+  var rock3 = importOBJ(rockResponseText);
+  var rock4 = importOBJ(rockResponseText);
+  var rock5 = importOBJ(rockResponseText);
+  var rock6 = importOBJ(rockResponseText);
+  var rock7 = importOBJ(rockResponseText);
+  var rock8 = importOBJ(rockResponseText);
+  var rock9 = importOBJ(rockResponseText);
+  var rock10 = importOBJ(rockResponseText);
   rock1.position = [10,0,-4];
-  rock2.position = [-16,0,11];
-  rock3.position = [-20,0,3];
-  rock4.position = [-10,0,22];
-  rock1.rotation = [22,0,3];
-  rock2.rotation = [-11,0,-16];
-  rock3.rotation = [25,0,-21];
-  rock4.rotation = [2,0,-12];
-  rock1.size = getOBJSize(rockMesh);
-  rock2.size = getOBJSize(rockMesh);
-  rock3.size = getOBJSize(rockMesh);
-  rock4.size = getOBJSize(rockMesh);
+  // spodaj levo
+  rock2.position = [-20,0,3];
+  rock3.position = [-16,0,12];
+  rock4.position = [2,0,27];
+  rock5.position = [-22,0,22];
+  rock6.position = [-10,0,18];
+  zeros = [0, 0, 0];
+  rock1.rotation = zeros;
+  rock2.rotation = zeros;
+  rock3.rotation = zeros;
+  rock4.rotation = zeros;
+  rock5.rotation = zeros;
+  rock6.rotation = zeros;
+  // zgoraj levo
+  rock7.position = [-5,0,-10];
+  rock8.position = [0,0,-12];
+  rock9.position = [-15,0,-22];
+  rock7.rotation = zeros;
+  rock8.rotation = zeros;
+  rock9.rotation = zeros;
+  //desno
+  rock10.position = [22,0,-22];
+  rock10.rotation = zeros;
+  rock1.size = rockSize;
+  rock2.size = rockSize;
+  rock3.size = rockSize;
+  rock4.size = rockSize;
+  rock5.size = rockSize;
+  rock6.size = rockSize;
+  rock7.size = rockSize;
+  rock8.size = rockSize;
+  rock9.size = rockSize;
+  rock10.size = rockSize;
+  rock1 = new OBJmodel(rock1.size, rock1.position, "rock");
+  rock2 = new OBJmodel(rock2.size, rock2.position, "rock");
+  rock3 = new OBJmodel(rock3.size, rock3.position, "rock");
+  rock4 = new OBJmodel(rock4.size, rock4.position, "rock");
+  rock5 = new OBJmodel(rock5.size, rock5.position, "rock");
+  rock6 = new OBJmodel(rock6.size, rock6.position, "rock");
+  rock7 = new OBJmodel(rockSize, rock7.position, "rock");
+  rock8 = new OBJmodel(rockSize, rock8.position, "rock");
+  rock9 = new OBJmodel(rockSize, rock9.position, "rock");
+  rock10 = new OBJmodel(rockSize, rock10.position, "rock");
+
   rocks[0] = rock1;
   rocks[1] = rock2;
   rocks[2] = rock3;
   rocks[3] = rock4;
+  rocks[4] = rock5;
+  rocks[5] = rock6;
+  rocks[6] = rock7;
+  rocks[7] = rock8;
+  rocks[8] = rock9;
+  rocks[9] = rock10;
+
 
 }
 
+// ?? zdej že useless metoda ??
 function addBomb(){
   var ibomb = bomb
   ibomb.position = [0,0,-2];
@@ -818,20 +903,6 @@ function addBomb(){
   meshes[meshes.length] = ibomb;
   bodysMY[bodysMY.length] = new OBJmodel(ibomb.size, ibomb.position, "bomb");
   
-  /*bombList[0].position = [0,0,0];
-  bombList[0].rotation = [0,0,0];
-  bombList[0].size = getOBJSize(bombList[0]);
-  meshes[meshes.length] = bombList[0];
-  bodysMY[bodysMY.length] = new OBJmodel(bombList[0].size, bombList[0].position, "bomb");
-  console.log(meshes.length);
-  
-  bombList[1].position = [10,0,0];
-  bombList[1].rotation = [0,0,0];
-  bombList[1].size = getOBJSize(bombList[1]);
-  meshes[meshes.length] = bombList[1];
-  bodysMY[bodysMY.length] = new OBJmodel(bombList[1].size, bombList[1].position, "bomb");
-  console.log(meshes.length);*/
-
   return ibomb;
 }
 
@@ -862,28 +933,67 @@ function updateOimoPhysics() {
     }
 
 
+
+//
+// Collision detection
 function checkCollisions(){
     // Soldier vs Bombs
   for (var i = 0; i < bombList.length; i++) {
-    if(bodysMY[0].detectCollision(getBombBody(i)) != null){
-      //Soldier dies
-      destroyBomb(i);   
+    //if(bodysMY[0].detectCollision(getBombBody(i)) != null){
+	if (collisionCheck(bodysMY[0], getBombBody(i), 0.75)) {
+	  destroyBomb(i); 
+      //Soldier dies     --> TODO: soldier HP <--  
+	  playerHP -= 10;
+	  document.getElementById("health-soldier").innerHTML = playerHP;
+
     }
   }
 
   //House vs Bombs
   for (var j = 0; j < bombList.length; j++) {
-      if(bodysMY[1].detectCollision(getBombBody(j)) != null){
-        destroyBomb(j);   
-      }
+
+    if(bodysMY[1].detectCollision(getBombBody(j)) != null){
+	//if (collisionCheck(bodysMY[1], getBombBody(j), 5)){
+      destroyBomb(j);   
+	  houseHP -= 100;
+	  document.getElementById("health-house").innerHTML = houseHP
+	  if (houseHP == 0) {
+		document.getElementById("game-status").innerHTML = "GAME OVER!";
+		gameActive = false;
+	  }
+    }
   }
 
   //Bullet vs Bombs
   for (var j = 0; j < bombList.length; j++) {
-      if(fire && bulletBody.detectCollision(getBombBody(j)) != null){
-        destroyBomb(j);   
-      }
+    if (fire && collisionCheck(bulletBody, getBombBody(j), 0.5)) {
+      destroyBomb(j);
+	  bombsKilled++;
+	  document.getElementById("bomb-counter").innerHTML = "Bombs destroyed: " + bombsKilled;
+	  fire = false;
+    }
   }
+  
+  //Bullet vs Nature (rocks, trees)
+  for (var j = 0; j < rocks.length; j++) {
+     // --> TODO <--
+  }
+  
+  //Bullet vs House
+  // --> TODO <--
+  
+}
+
+//
+// Moja funkcija za collision detection med telesoma body1 & body2  [primitivna -> gleda samo 2 dimenziji in računa razdaljo med centroma (zato uporabna samo za kvadratne/okorgle objekte)]
+function collisionCheck(body1, body2, dist) {
+	var originIsPlayer = 0;
+	if (body1.name === "soldier" || body1.name === "bullet")
+		originIsPlayer = 6;
+	var p1 = [body1.position[0], body1.position[2]+originIsPlayer];
+	var p2 = [body2.position[0], body2.position[2]];
+	return distance(p1, p2) < dist;
+
 }
 
 
@@ -956,6 +1066,12 @@ function start() {
     // Initialise world objects
     loadObjects();
     playAmbientAudio();
+
+	document.getElementById("game-status").innerHTML = "Game running.....";
+	document.getElementById("health-house").innerHTML = houseHP;
+	document.getElementById("health-soldier").innerHTML = playerHP;
+	document.getElementById("bomb-counter").innerHTML = "Bombs destroyed: " + bombsKilled;
+
   setTimeout(
     function() 
     {
@@ -967,9 +1083,15 @@ function start() {
       document.onkeyup = handleKeyUp;
       
       // Set up to draw the scene periodically.
-      setInterval(function() {
+      var intervalID = setInterval(function() {
+		if (!gameActive)
+			clearInterval(intervalID);
         requestAnimationFrame(animate);
         handleKeys();
+		if (timer > 30000) {
+			document.getElementById("game-status").innerHTML = "GAME OVER!";
+			gameActive = false;
+		}
       }, 1000/60);
     }, 500);
   }
