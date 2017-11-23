@@ -1025,6 +1025,7 @@ function restartGame(){
   zPosition = 0;
   document.getElementById("health-house").innerHTML = houseHP;
   document.getElementById("health-soldier").innerHTML = playerHP;
+  document.getElementById("ammo-count").innerHTML = ammoCount;
   start();
 
   //TODO
