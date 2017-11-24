@@ -1,62 +1,135 @@
 <html>
 	<head>
-		<title>Zombie</title>
+		<title>Protect the core</title>
 		<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
 		<link rel="stylesheet" href="./style/webgl.css" type="text/css">
 		<script type="text/javascript" src="./scripts/glMatrix-0.9.5.min.js"></script>
 		<script src="./scripts/webgl-obj-loader.js" type="text/javascript"></script>
+		<script src="./scripts/initVariables.js" type="text/javascript"></script>
 		<script src="./scripts/main.js" type="text/javascript"></script>
-		<script src="./scripts/oimo.min.js" type="text/javascript"></script> 
 		<script src="./scripts/collisionDetection.js" type="text/javascript"></script> 
+		<script src="./scripts/audio.js" type="text/javascript"></script> 
+		<script src="./scripts/populate.js" type="text/javascript"></script> 
+		<script src="./scripts/importOBJ.js" type="text/javascript"></script> 
 		<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
 
 	    <!-- Fragment shader program -->
-	    <script id="shader-fs" type="x-shader/x-fragment">
+	   	    <script id="shader-fs" type="x-shader/x-fragment">
 			precision mediump float;
 
 	    	// uniform attribute for setting texture coordinates
 			varying vec2 vTextureCoord;
+			// uniform attribute for setting lighting
+		    varying vec3 vLightWeighting;
 
 			// uniform attribute for setting 2D sampler
 			uniform sampler2D uSampler;
 
 			void main(void) {
 		    	// sample the fragment color from texture
-			    gl_FragColor = texture2D(uSampler, vec2(vTextureCoord.s, vTextureCoord.t));
+		        vec4 textureColor = texture2D(uSampler, vec2(vTextureCoord.s, vTextureCoord.t));
+			    gl_FragColor = vec4(textureColor.rgb * vLightWeighting, textureColor.a);
 			}
 	    </script>
-
+<script type="text/javascript">
+			function showValue(id, newValue)
+			{
+				document.getElementById(id+"span").innerHTML = " " + newValue;
+			}
+		</script>
     
 	    <!-- Vertex shader program -->	    
 	    <script id="shader-vs" type="x-shader/x-vertex">
     		// atributes for setting vertex position and texture coordinates
 		    attribute vec3 aVertexPosition;
+		    attribute vec3 aVertexNormal;
 		    attribute vec2 aTextureCoord;
 
 		    uniform mat4 uMVMatrix;	// model-view matrix
 		    uniform mat4 uPMatrix;	// projection matrix
+		    uniform mat3 uNMatrix;	// normal matrix
+		    uniform vec3 uAmbientColor;	// ambient color uniform
 
-			// variable for passing texture coordinates
+		    uniform vec3 uLightingDirection;	// light direction uniform
+		    uniform vec3 uDirectionalColor;		// light color
+
+			// variable for passing texture coordinates and lighting weights
 			// from vertex shader to fragment shader
 		    varying vec2 vTextureCoord;
+		    varying vec3 vLightWeighting;
 
 		    void main(void) {
 		    	// calculate the vertex position
 		        gl_Position = uPMatrix * uMVMatrix * vec4(aVertexPosition, 1.0);
 		        vTextureCoord = aTextureCoord;
+
+
+	        	// transform normals
+	            vec3 transformedNormal = uNMatrix * aVertexNormal;
+
+	            // calculate weight for directional light
+	            float directionalLightWeighting = max(dot(transformedNormal, uLightingDirection), 0.0);
+
+	            // calculate lighting
+	            vLightWeighting = uAmbientColor + uDirectionalColor * directionalLightWeighting;
 		    }
 		</script>
 	</head>
-	<body onload="start()">
-		<h1>Zombie</h1>
-		<div id="content">
-			<canvas id="glcanvas"  width="1280px" height="720px">
-				No <code>&lt;canvas&gt;</code> suppport in your browser.
-			</canvas>
-    		<div id="loadingtext">Loading world...</div>
 
-    		<div id='info'></div>
-			<a href="./"><- Back</a>
+	<body onload="start()"  oncontextmenu="return false;">
+		<h1>Protect the core</h1>
+		<div id="content">
+			<div id="container">
+				<canvas id="glcanvas"  width="1280px" height="720px">
+				
+					No <code>&lt;canvas&gt;</code> suppport in your browser.
+				</canvas>
+			  <div id="overlay-gameover">
+				<p id="gameover">GAME OVER</p>
+				<p id="bomb-counter"></p>
+			  </div>
+			  <div id="restart-wrapper" onclick="restartGame()">
+					<p id="restart">Restart</p>				
+				</div>
+
+			  <div id="overlay">
+				  <div style="position:relative;">
+				  	
+				  	<div class="ammo_wrap">
+				  		<div style="display: inline-block;">		  			
+					  		<img class="picture" src="assets/ammopicture.png">
+				  		</div>
+
+						<p id="ammo-count">5</p>
+				  	</div>
+				  	<div class="health_wrapper">
+				  		<div style="display: inline-block;">
+				  			<img class="picture health_status" src="assets/health.png">
+						</div>
+						<p id="health-soldier">100</p>
+
+				  	</div>
+				  	<div class="house_wrapper">
+					  	<div style="display: inline-block;">
+					  		<img class="picture house_status" src="assets/house.png">			  		
+					  	</div>
+						<p id="health-house"></p>
+				  	</div>
+				  </div>
+			  </div>
+			<div style="
+			position: absolute;
+			bottom: 20px;
+			left: 30px;
+			">
+			<p id="timerText">Time:  </p>   
+			<p id="timer">0</p>     
+			</div>
+			</div>
+
+    		<div id="loadingtext">Loading world...</div>
+			
+			<p>Use W,A,S,D to move player around map. Holding SHIFT makes the player sprint, but unable to shoot. For shooting use left mouse click.</p>
 		</div>
 	</body>
 </html>

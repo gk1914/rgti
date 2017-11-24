@@ -1,61 +1,3 @@
-// Global variable definitionvar canvas;
-var canvas;
-var gl;
-var shaderProgram;
-
-
-
-// Buffers
-var worldVertexPositionBuffer = null;
-var worldVertexTextureCoordBuffer = null;
-var mesh = null;
-var bomb = null;
-var house = null;
-var bombList = [];
-// Model-view and projection matrix and model-view matrix stack
-var mvMatrixStack = [];
-var mvMatrix = mat4.create();
-var pMatrix = mat4.create();
-
-// Variables for storing textures
-var wallTexture = null;
-var midTexture = null;
-var bombTexture = null;
-var houseTexture = null;
-// Variable that stores  loading state of textures.
-var texturesLoaded = false;
-
-// Keyboard handling helper variable for reading the status of keys
-var currentlyPressedKeys = {};
-
-// Variables for storing current position and speed
-var yaw = 0;
-var xPosition = 0;
-var yPosition = 3;
-var zPosition = 0;
-var speedForward = 0;
-var speedSide = 0;
-
-//mouse position
-var xMouse = 0;
-var yMouse = 0;
-var rotMouse = 0;
-// Used to make us "jog" up and down as we move forward.
-var joggingAngle = 0;
-var movingSpeed = 0.008;
-
-var spawnPosition = [1,0,0];
-
-// Helper variable for animation
-var lastTime = 0;
-
-
-var isCollision = false;
-
-// Moving bombs
-
-var bombSpeed = 0.01;
-
 
 
 //
@@ -124,7 +66,7 @@ function getShader(gl, id) {
   var currentChild = shaderScript.firstChild;
   while (currentChild) {
     if (currentChild.nodeType == 3) {
-        shaderSource += currentChild.textContent;
+      shaderSource += currentChild.textContent;
     }
     currentChild = currentChild.nextSibling;
   }
@@ -180,22 +122,42 @@ function initShaders() {
   
   // store location of aVertexPosition variable defined in shader
   shaderProgram.vertexPositionAttribute = gl.getAttribLocation(shaderProgram, "aVertexPosition");
-
+  
   // turn on vertex position attribute at specified position
   gl.enableVertexAttribArray(shaderProgram.vertexPositionAttribute);
 
   // store location of aVertexNormal variable defined in shader
-  shaderProgram.textureCoordAttribute = gl.getAttribLocation(shaderProgram, "aTextureCoord");
+  shaderProgram.vertexNormalAttribute = gl.getAttribLocation(shaderProgram, "aVertexNormal");
+
+  // turn on vertex normal attribute at specified position
+  gl.enableVertexAttribArray(shaderProgram.vertexNormalAttribute);
 
   // store location of aTextureCoord variable defined in shader
+  shaderProgram.textureCoordAttribute = gl.getAttribLocation(shaderProgram, "aTextureCoord");
+
+  // turn on vertex texture coordinates attribute at specified position
   gl.enableVertexAttribArray(shaderProgram.textureCoordAttribute);
 
   // store location of uPMatrix variable defined in shader - projection matrix 
   shaderProgram.pMatrixUniform = gl.getUniformLocation(shaderProgram, "uPMatrix");
+
   // store location of uMVMatrix variable defined in shader - model-view matrix 
   shaderProgram.mvMatrixUniform = gl.getUniformLocation(shaderProgram, "uMVMatrix");
+
+  // store location of uNMatrix variable defined in shader - normal matrix 
+  shaderProgram.nMatrixUniform = gl.getUniformLocation(shaderProgram, "uNMatrix");
+
   // store location of uSampler variable defined in shader
   shaderProgram.samplerUniform = gl.getUniformLocation(shaderProgram, "uSampler");
+
+  // store location of uAmbientColor variable defined in shader
+  shaderProgram.ambientColorUniform = gl.getUniformLocation(shaderProgram, "uAmbientColor");
+
+  // store location of uLightingDirection variable defined in shader
+  shaderProgram.lightingDirectionUniform = gl.getUniformLocation(shaderProgram, "uLightingDirection");
+
+  // store location of uDirectionalColor variable defined in shader
+  shaderProgram.directionalColorUniform = gl.getUniformLocation(shaderProgram, "uDirectionalColor");
 }
 
 //
@@ -206,8 +168,12 @@ function initShaders() {
 function setMatrixUniforms() {
   gl.uniformMatrix4fv(shaderProgram.pMatrixUniform, false, pMatrix);
   gl.uniformMatrix4fv(shaderProgram.mvMatrixUniform, false, mvMatrix);
-}
 
+  var normalMatrix = mat3.create();
+  mat4.toInverseMat3(mvMatrix, normalMatrix);
+  mat3.transpose(normalMatrix);
+  gl.uniformMatrix3fv(shaderProgram.nMatrixUniform, false, normalMatrix);
+}
 //
 // initTextures
 //
@@ -242,11 +208,28 @@ function handleLoadedWorld(data) {
     }
   }
 
+  var vertexNormalsCoords = [
+  0.0,  0.0,  1.0,
+  0.0,  0.0,  1.0,
+  0.0,  0.0,  1.0,
+
+  0.0,  0.0,  1.0,
+  0.0,  0.0,  1.0,
+  0.0,  0.0,  1.0
+  ];
+
   worldVertexPositionBuffer = gl.createBuffer();
   gl.bindBuffer(gl.ARRAY_BUFFER, worldVertexPositionBuffer);
   gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertexPositions), gl.STATIC_DRAW);
   worldVertexPositionBuffer.itemSize = 3;
   worldVertexPositionBuffer.numItems = vertexCount;
+
+  worldVertexNormalsBuffer = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, worldVertexNormalsBuffer);
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertexNormalsCoords), gl.STATIC_DRAW);
+  worldVertexNormalsBuffer.itemSize = 3;
+  worldVertexNormalsBuffer.numItems = vertexCount;
+
 
   worldVertexTextureCoordBuffer = gl.createBuffer();
   gl.bindBuffer(gl.ARRAY_BUFFER, worldVertexTextureCoordBuffer);
@@ -280,7 +263,6 @@ function getOBJSize(mesh){
       y.push(mesh.vertices[i]);      
     }else{
       z.push(mesh.vertices[i]);
-      console.log()
     }
   }
   var maxX = Math.max.apply(Math,x);
@@ -295,56 +277,6 @@ function getOBJSize(mesh){
   return [Math.abs(maxX) + Math.abs(minX), Math.abs(maxY) + Math.abs(minY), Math.abs(maxZ) + Math.abs(minZ)]
 }
 
-function importOBJ(data){
-  var mesh = new OBJ.Mesh(data);
-  OBJ.initMeshBuffers(gl, mesh);
-  return mesh
-}
-function loadWorld() {
-  var request = new XMLHttpRequest();
-  request.open("GET", "./assets/world.txt");
-  request.onreadystatechange = function () {
-    if (request.readyState == 4) {
-      handleLoadedWorld(request.responseText);
-    }
-  }
-  request.send();
-}
-
-function loadSoldier() {
-  var request = new XMLHttpRequest();
-  request.open("GET", "./assets/soldier2.obj");
-  request.onreadystatechange = function () {
-    if (request.readyState == 4) {
-      mesh = importOBJ(request.responseText);
-
-
-    }
-  }
-  request.send();
-}
-
-function loadBomb() {
-  var request = new XMLHttpRequest();
-  request.open("GET", "./assets/bomb.obj");
-  request.onreadystatechange = function () {
-    if (request.readyState == 4) {
-      bomb = importOBJ(request.responseText);
-    }
-  }
-  request.send();
-}
-
-function loadHouse() {
-  var request = new XMLHttpRequest();
-  request.open("GET", "./assets/farmhouse.obj");
-  request.onreadystatechange = function () {
-    if (request.readyState == 4) {
-      house = importOBJ(request.responseText);
-    }
-  }
-  request.send();
-}
 
 //
 // 
@@ -381,7 +313,33 @@ function initTextures() {
     handleTextureLoaded(houseTexture)
   }
   houseTexture.image.src = "./assets/farmhouseT.jpg";
+  
+  ammoTexture = gl.createTexture();
+  ammoTexture.image = new Image();
+  ammoTexture.image.onload = function () {
+    handleTextureLoaded(ammoTexture)
+  }
+  ammoTexture.image.src = "./assets/D.png";
+
+  bulletTexture = gl.createTexture();
+  bulletTexture.image = new Image();
+  bulletTexture.image.onload = function () {
+    handleTextureLoaded(bulletTexture)
+  }
+  bulletTexture.image.src = "./assets/Bullet_Texture.jpg";
+
+  rockTexture = gl.createTexture();
+  rockTexture.image = new Image();
+  rockTexture.image.onload = function () {
+    handleTextureLoaded(rockTexture)
+  }
+  rockTexture.image.src = "./assets/rock1text.jpg";
+
+
 }
+
+
+
 
 function handleTextureLoaded(texture) {
   gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
@@ -397,6 +355,7 @@ function handleTextureLoaded(texture) {
 
   // when texture loading is finished we can draw scene.
   texturesLoaded = true;
+  textureCounter=textureCounter+1;
 }
 
 //
@@ -433,13 +392,24 @@ function drawScene() {
 
 
 
-  mat4.rotate(mvMatrix, degToRad(45), [1, 0, 0]);
+  mat4.rotate(mvMatrix, degToRad(60), [1, 0, 0]);
   if(isCollision){
     mat4.translate(mvMatrix, [-bodysMY[0].position[0], -20, -bodysMY[0].position[2]-15]);
   }else{
     mat4.translate(mvMatrix, [-xPosition, -20, -zPosition-15]);
   }
   mvPushMatrix();
+
+  gl.uniform3f(shaderProgram.ambientColorUniform,0.5,0.5,0.7);
+
+  var lightingDirection = [-0.25,-0.25,0.25];
+  var adjustedLD = vec3.create();
+  vec3.normalize(lightingDirection, adjustedLD);
+  vec3.scale(adjustedLD, -2);
+  //console.log(adjustedLD);
+  gl.uniform3fv(shaderProgram.lightingDirectionUniform, adjustedLD);
+
+  gl.uniform3f(shaderProgram.directionalColorUniform,1.0,0.6,0.0);
 
   gl.activeTexture(gl.TEXTURE0);
   gl.bindTexture(gl.TEXTURE_2D, wallTexture);
@@ -448,6 +418,9 @@ function drawScene() {
   gl.bindBuffer(gl.ARRAY_BUFFER, worldVertexTextureCoordBuffer);
   gl.vertexAttribPointer(shaderProgram.textureCoordAttribute, worldVertexTextureCoordBuffer.itemSize, gl.FLOAT, false, 0, 0);
 
+  gl.bindBuffer(gl.ARRAY_BUFFER, worldVertexNormalsBuffer);
+  gl.vertexAttribPointer(shaderProgram.vertexNormalAttribute, worldVertexNormalsBuffer.itemSize, gl.FLOAT, false, 0, 0);
+
   
   gl.bindBuffer(gl.ARRAY_BUFFER, worldVertexPositionBuffer);
   gl.vertexAttribPointer(shaderProgram.vertexPositionAttribute, worldVertexPositionBuffer.itemSize, gl.FLOAT, false, 0, 0);
@@ -455,12 +428,22 @@ function drawScene() {
 
   setMatrixUniforms();
   gl.drawArrays(gl.TRIANGLES, 0, worldVertexPositionBuffer.numItems);
- 
+
   // ^^^^^^^
   //  WORLD
   
 
 
+  for (var i = 0; i < rocks.length; i++) {
+    mvPopMatrix();
+    mvPushMatrix();
+
+    mat4.translate(mvMatrix, [rocks[i].position[0], rocks[i].position[1], rocks[i].position[2]]);
+
+    drawOBJ(rockMesh,rockTexture);
+
+
+  }
 
   for (var i = 0; i < meshes.length; i++) {
     // restore last location
@@ -473,7 +456,7 @@ function drawScene() {
       //soldier
 
       //mat4.translate(mvMatrix, meshes[i].position);
-      mat4.translate(mvMatrix, [bodysMY[i].position[0], bodysMY[i].position[1], bodysMY[i].position[2]-1.5]);
+      mat4.translate(mvMatrix, [bodysMY[i].position[0], bodysMY[i].position[1], bodysMY[i].position[2]+6]);
       mat4.rotate(mvMatrix, degToRad(rotMouse), [0, -1, 0]);
       drawOBJ(mesh,midTexture);
 
@@ -489,6 +472,27 @@ function drawScene() {
       drawOBJ(bomb,bombTexture);
     }
   }
+  
+  // draw bullet 
+  if (fire) {
+    mvPopMatrix();
+    mvPushMatrix();
+
+    mat4.translate(mvMatrix, [bulletMesh.xBulletPosition, 2.25, bulletMesh.zBulletPosition+6]);
+
+    mat4.rotate(mvMatrix, degToRad(bulletMesh.bulletRot), [0, -1, 0]);
+
+    drawOBJ(bulletMesh,bulletTexture);
+  }
+  
+  // draw ammo
+  if (ammoActive) {
+   mvPopMatrix();
+   mvPushMatrix();
+   mat4.translate(mvMatrix, ammo.position);
+
+   drawOBJ(ammo,ammoTexture);
+ }
 
 }
 
@@ -504,6 +508,10 @@ function drawOBJ(obj,texture){
   gl.bindBuffer(gl.ARRAY_BUFFER, obj.textureBuffer);
   gl.vertexAttribPointer(shaderProgram.textureCoordAttribute, obj.textureBuffer.itemSize, gl.FLOAT, false, 0, 0);
 
+  gl.bindBuffer(gl.ARRAY_BUFFER, obj.normalBuffer);
+  gl.vertexAttribPointer(shaderProgram.vertexNormalAttribute, obj.normalBuffer.itemSize, gl.FLOAT, false, 0, 0);
+
+
   // Activate textures
   gl.activeTexture(gl.TEXTURE0);
   gl.bindTexture(gl.TEXTURE_2D, texture);
@@ -518,33 +526,223 @@ function drawOBJ(obj,texture){
 }
 
 
+
+
 //
 // animate
 //
 // Called every time before redeawing the screen.
 //
+
 function animate() {
-  
+
+  var currentX = xPosition;
+  var currentZ = zPosition;
+
+  var clickedX = false;
+  var clickedZ = false;
+
   var timeNow = new Date().getTime();
   if (lastTime != 0) {
     var elapsed = timeNow - lastTime;
 
     if (speedForward != 0) {
       zPosition -= speedForward * elapsed;
+      clickedZ == true;
     }
 
     if (speedSide != 0) {
       xPosition -= speedSide * elapsed;
+      clickedX == true;
     }
 
-  }
-  //console.log(xPosition);
-  lastTime = timeNow;
-    
 
-  updateOimoPhysics();
+    // collision detection --> soldier & house
+    var io = bodysMY[0];
+    io.setPosition([meshes[0].position[0]+xPosition,meshes[0].position[1],meshes[0].position[2]+zPosition+7.5]);		// | offseting zaradi perspektive
+    collision = io.detectCollision(bodysMY[1]);																			// | ker sva sla iz 45stopinj na 60stopinj, je zdaj player & bullet po Z osi transliran drugače,
+    if(collision != null){																								// | zato: [namest -1.5 je +6 --> 6-(-1.5)=7.5 --> tu popravimo Z position za 7.5] 
+      if (speedForward != 0 && speedSide != 0) {																		// ---------------------------------------------------------------------------------------------
+        zPosition = currentZ;
+        xPosition = currentX;
+      }else if(speedForward != 0){
+        zPosition = currentZ;        
+      }else{
+        xPosition = currentX;
+      }
+    }
+
+	io.setPosition([io.position[0],io.position[1],io.position[2]-7.5]);													// offseting zaradi perspektive - restore
+	
+	// collision detection --> soldier & rocks										
+	for (var i = 0; i < rocks.length; i++) {
+	  collision = collisionCheck(bodysMY[0], rocks[i], 1.25);
+      if(collision){
+        if (speedForward != 0 && speedSide != 0) {
+          zPosition = currentZ;
+          xPosition = currentX;
+        } else if(speedForward != 0) {
+          zPosition = currentZ;        
+        } else {
+          xPosition = currentX;
+        }
+      }
+    }
+
+	// bounds
+	if (Math.abs(xPosition) > 29 || Math.abs(zPosition+6) > 29) {
+      if (speedForward != 0 && speedSide != 0) {
+        zPosition = currentZ;
+        xPosition = currentX;
+      } else if (speedForward != 0) {
+        zPosition = currentZ;        
+      } else {
+        xPosition = currentX;
+      }
+    }
+    bodysMY[0].setPosition([xPosition,bodysMY[0].position[1],zPosition]);
+
+	// update the game timer
+    if(gameActive)
+      timer += elapsed;
+
+  }
+  lastTime = timeNow;
+
+  // ammo
+  if (!ammoActive && timeNow - lastAmmoPickup > ammoSpawnInterval) {
+    spawnAmmo();
+    console.log("spawn ammo");  
+  }
+  if (ammoActive && distance([xPosition, zPosition+6], [ammo.position[0], ammo.position[2]]) < 1) {
+    lastAmmoPickup = timeNow;
+    ammoCount += 5;
+    document.getElementById("ammo-count").innerHTML = ammoCount;
+    ammoActive = false;
+
+    playAmmoPickup();
+  }
+ 
+  // bombs
+  if (timeNow - lastSpawn > spawnInterval) {
+    if (lastSpawn != 0) 
+      spawnBombs();
+    lastSpawn = timeNow;
+  }
+  updateBombDirection();
+  animateBombs(elapsed);
+
+  // bullet
+  if (fire) {
+    var angle = degToRad(bulletMesh.bulletRot);
+    bulletMesh.xBulletPosition -= Math.sin(angle)*bulletSpeed;
+    bulletMesh.zBulletPosition -= Math.cos(angle)*(-bulletSpeed);
+    bulletBody.setPosition([bulletMesh.xBulletPosition, 2.25, bulletMesh.zBulletPosition]);
+  }
+  if (timeNow - lastFire > bulletLifetime) {
+    fire = false;
+  }
+
+
+  checkCollisions();
+
+  updatePhysics();
 
 }
+
+
+// Function for moving/animating bombs
+function animateBombs(elapsed) {
+	for (var i = 0; i < bombList.length; i++) {
+		bombList[i].position[0] += bombSpeed * elapsed * bombList[i].direction[0];
+		bombList[i].position[2] += bombSpeed * elapsed * bombList[i].direction[1];
+		bombList[i].aliveFor += elapsed;
+		bodysMY[i+2].setPosition(bombList[i].position);
+	}
+}
+
+//
+// Function for spawning bombs and a helper function for randomizing spawn point
+function spawnBombs() {
+  spawnIndex = getSpawnIndex(bombSpawnPoints.length);
+  bombList.push(importOBJ(bombResponseText));
+  var tempIdx = bombList.length-1;
+  bombList[tempIdx].position = bombSpawnPoints[spawnIndex].slice();
+  bombList[tempIdx].rotation = [0,0,0];
+  bombList[tempIdx].size = bombSize;
+  bombList[tempIdx].program = bombMoveProgram[spawnIndex];
+  bombList[tempIdx].currStep = 0;
+  bombList[tempIdx].aliveFor = 0;
+  meshes[meshes.length] = bombList[tempIdx];
+  bodysMY[bodysMY.length] = new OBJmodel(bombList[tempIdx].size, bombList[tempIdx].position, "bomb");
+  bombsSpawned++;
+}
+
+function removeAllBombs(){
+  for (var i = 0; i < bombList.length; i++) {
+    bombList.splice(i,1);
+    meshes.splice(i+2,1);
+    bodysMY.splice(i+2,1);
+  }
+}
+
+function removeAllBombs(){
+  for (var i = 0; i < bombList.length; i++) {
+    bombList.splice(i,1);
+    meshes.splice(i+2,1);
+    bodysMY.splice(i+2,1);
+  }
+}
+
+function getSpawnIndex(upTo) {
+  var rand = Math.floor(Math.random() * upTo);
+  while (rand == lastSpawnIndex)
+	rand = Math.floor(Math.random() * upTo);
+  lastSpawnIndex = rand;
+  return rand;
+}
+
+// Destroy bomb at index i
+function destroyBomb(i) {
+  bombList.splice(i,1);
+  meshes.splice(i+2,1);
+  playExplosion();
+}
+
+// Update the direction of bombs
+function updateBombDirection() {
+	for (var i = 2; i < meshes.length; i++) {
+		//meshes[i].direction = moveBomb([meshes[i].position[0], meshes[i].position[2]], [0, 0]);
+		var curr = meshes[i];
+		meshes[i].direction = moveBomb([meshes[i].position[0], meshes[i].position[2]], curr.program[curr.currStep])
+		
+		var distToNextStep = distance([curr.position[0], curr.position[2]], curr.program[curr.currStep]);
+		if (distToNextStep < 0.25)
+			meshes[i].currStep++;
+	}
+}
+//Function for moving bomb from point a to point b
+function moveBomb(p1, p2) {
+	var x1 = p1[0];
+	var x2 = p2[0];
+	var y1 = p1[1];
+	var y2 = p2[1];
+	var dir = [(x2-x1), (y2-y1)];
+	var dist = distance(p1, p2);
+	var moveVector= [dir[0]/dist, dir[1]/dist];
+	return moveVector;
+}
+
+// Helper: get distance between point p1 and p2
+function distance(p1, p2) {
+	var x1 = p1[0];
+	var x2 = p2[0];
+	var y1 = p1[1];
+	var y2 = p2[1];
+	return Math.sqrt((x1-x2)*(x1-x2) + (y1-y2)*(y1-y2));
+}
+
+
 
 //
 // Keyboard handling helper functions
@@ -589,6 +787,19 @@ function handleKeys() {
   } else {
     speedForward = 0;
   }
+  
+  if (currentlyPressedKeys[16]) {
+	speedSide *= 1.5;
+	speedForward *= 1.5;
+	sprinting = true;
+  }
+  else
+	sprinting = false;
+  
+  if (currentlyPressedKeys[32]) {
+    // delete bomb that spawned first
+    destroyBomb(0);
+  }
 }
 
 // rotate soldier
@@ -599,111 +810,131 @@ function mouseRotation(x,y){
 }
 //get angle
 function angle(a1, a2, b1, b2) {
-    
-    theta = Math.atan2(b1 - a1, a2 - b2);
-    if (theta < 0.0)
-        theta += 2*Math.PI
-    return theta/ Math.PI * 180;
+
+  theta = Math.atan2(b1 - a1, a2 - b2);
+  if (theta < 0.0)
+    theta += 2*Math.PI
+  return theta/ Math.PI * 180;
 }
 
 
 
 
-function initPhy(){
+function getBombBody(i) {
+	return bodysMY[i+2];
+}
 
+// Add new ammo crate
+function spawnAmmo() {
+  var spawnIndex = ++ammoLastSpawn;
+  ammo.position[0] = ammoSpawnPoints[spawnIndex][0];
+  ammo.position[1] = 0;
+  ammo.position[2] = ammoSpawnPoints[spawnIndex][2];
+  ammoActive = true;
+}
+
+
+//
+// inicializacija okolja
+function initPhy() {
   populate();
 }
 
-var meshes = [];
-var meshesPositions = [];
-var bodysMY = [];
-var infos;
 
-function populate(){
-  
-  
-  
-  //soldier
-  mesh.position = [0,0,0];
-  mesh.rotation = [0,0,0];
-  mesh.size = getOBJSize(mesh);
-  meshes[0] = mesh;
+function updatePhysics() {
+  var collision, imesh, bodyMY, moveX, moveZ, i = bodysMY.length;
+  while (i--){
+    bodyMY = bodysMY[i];
+    imesh = meshes[i];
 
-  bodysMY[0] = new OBJmodel(mesh.size, mesh.position, "soldier");
-
-  //house
-  house.position = [10,0,10];
-  house.rotation = [0,0,0];
-  house.size = getOBJSize(house); 
-  meshes[1] = house;
-
-  bodysMY[1] = new OBJmodel(house.size, house.position, "house");
-
-
-  addBomb();
-}
-
-function addBomb(){
-    //house
-  var ibomb = bomb
-  ibomb.position = [10,0,0];
-  ibomb.rotation = [0,0,0];
-  ibomb.size = getOBJSize(ibomb);
-  meshes[meshes.length] = ibomb;
-  bodysMY[bodysMY.length] = new OBJmodel(ibomb.size, ibomb.position, "bomb");
-
-  return ibomb;
-}
-
-
-function updateOimoPhysics() {
-        var collision, imesh, bodyMY, moveX, moveZ, i = bodysMY.length;
-        while (i--){
-            bodyMY = bodysMY[i];
-            imesh = meshes[i];
-            
-            if (i == 0){
-                  console.log(zPosition);
-
-              var io = new OBJmodel(bodysMY[0].size,bodysMY[0].position,"");
-              io.setPosition([imesh.position[0]+xPosition,imesh.position[1],imesh.position[2]+zPosition]);
-              collision = io.detectCollision(bodysMY[1]);
-              if(typeof collision === 'string'){
-                isCollision = true;
-                console.log("insideee");
-                if (collision == "top"){
-                  bodysMY[0].setPosition([imesh.position[0]+xPosition,imesh.position[1],bodysMY[1].minZ-0.7]);
-                  zPosition = bodysMY[1].minZ-0.7;                
-                } else if (collision == "down"){
-                  bodysMY[0].setPosition([imesh.position[0]+xPosition,imesh.position[1],bodysMY[1].maxZ+0.7]);
-                  zPosition = bodysMY[1].maxZ+0.7;                
-                }else if (collision == "left"){
-                  bodysMY[0].setPosition([bodysMY[1].minX-0.5,imesh.position[1],imesh.position[2]+zPosition]);
-                  xPosition = bodysMY[1].minX-0.5;                
-                }else if (collision == "right"){
-                  bodysMY[0].setPosition([bodysMY[1].maxX+0.5,imesh.position[1],imesh.position[2]+zPosition]);
-                  xPosition = bodysMY[1].maxX+0.5;      
-                }
-
-
-
-
-              }else{
-                //console.log(xPosition);
-
-                isCollision = false;
-                bodysMY[0].setPosition([imesh.position[0]+xPosition,imesh.position[1],imesh.position[2]+zPosition]);                
-              }
-            }else if(i == 1){
-              //bodysMY[1] = bodyMY;
-
-            }
-        }
-        drawScene();
+    if (i == 0){
+      bodysMY[0].setPosition([imesh.position[0]+xPosition,imesh.position[1],imesh.position[2]+zPosition]);                
     }
+  }
+  drawScene();
+}
 
 
 
+//
+// Collision detection
+function checkCollisions(){
+  // Soldier vs Bombs
+  for (var i = 0; i < bombList.length; i++) {
+    if (collisionCheck(bodysMY[0], getBombBody(i), 0.75)) {
+      destroyBomb(i); 
+      //Soldier dies
+      playerHP -= 10;
+      document.getElementById("health-soldier").innerHTML = playerHP;
+
+    }
+  }
+
+  //House vs Bombs
+  for (var j = 0; j < bombList.length; j++) {
+    if(bodysMY[1].detectCollision(getBombBody(j)) != null) {
+      destroyBomb(j);   
+      houseHP -= 100;
+      document.getElementById("health-house").innerHTML = houseHP
+      if (houseHP == 0) {
+        gameActive = false;
+      }
+    }
+  }
+
+
+  //Bullet vs Bombs
+  for (var j = 0; j < bombList.length; j++) {
+    if (fire && collisionCheck(bulletBody, getBombBody(j), 0.5)) {
+
+	  fire = false;
+	  // določi oceno 	--> če bombice ne uničimo v manj kot 10 sekundah (od njenega spawna), dobimo samo 10 točk
+	  //				--> če jo uničimo prej kot v 10 sekundah, potem dobimo točke določene po formuli  'score' = 'procent preostalega časa za uničenje bombice' * 100   (score je lahko najmanj 10 in največ 100)
+	  var score = 10;
+	  if (bombList[j].aliveFor <= 10000)
+		  score = Math.max(10, (1 - (bombList[j].aliveFor/10000)) * 100);
+	  console.log("score: " + score);
+	  totalScore += score;
+	  
+	  bombsKilled++;
+      destroyBomb(j);
+    }
+  }
+  
+  //Bullet vs Nature (rocks, trees)
+  if (fire) {
+	bulletBody.setPosition([bulletBody.position[0],bulletBody.position[1],bulletBody.position[2]-1]);					// spet offseting, tokrat zato ker je metek dvignjen na Y osi, skala pa ni (je na Y=0)
+	for (var j = 0; j < rocks.length; j++) {																			//   --> treba popravit Z os metka, da deluje collision kot je treba tudi če streljamo iz strani
+      if (collisionCheck(bulletBody, rocks[j], 1.25)) {
+        fire = false;
+      }
+    }
+	bulletBody.setPosition([bulletBody.position[0],bulletBody.position[1],bulletBody.position[2]+1]);
+  }
+
+
+  //Bullet vs House
+  if (fire) {
+	  var io = bulletBody;
+	  io.setPosition([bulletBody.position[0],bulletBody.position[1],bulletBody.position[2]+7.5]);						// standard offseting zaradi hiše
+	  if (bodysMY[1].detectCollision(bulletBody) != null) {
+		fire = false;
+	  }
+	  io.setPosition([io.position[0],io.position[1],io.position[2]-7.5]);
+  }
+  
+}
+
+//
+// Funkcija za collision detection med telesoma body1 & body2  [primitivna -> gleda samo 2 dimenziji in računa razdaljo med centroma (zato uporabna samo za kvadratne/okorgle objekte)]
+function collisionCheck(body1, body2, dist) {
+	var originIsPlayer = 0;
+	if (body1.name === "soldier" || body1.name === "bullet")
+		originIsPlayer = 6;
+	var p1 = [body1.position[0], body1.position[2]+originIsPlayer];
+	var p2 = [body2.position[0], body2.position[2]];
+	return distance(p1, p2) < dist;
+}
 
 
 
@@ -714,16 +945,48 @@ function updateOimoPhysics() {
 // Called when the canvas is created to get the ball rolling.
 // Figuratively, that is. There's nothing moving in this demo.
 //
+
+function initHUD(){
+  $("#container").css("width", $("#glcanvas").width());
+  $("#container").css("height", $("#glcanvas").height());
+}
+
 function start() {
   canvas = document.getElementById("glcanvas");
   infos = document.getElementById("info");
+  $("#overlay-gameover").hide();
+  $("#restart-wrapper").hide();
   //mouse movement listner
+  initHUD();
   canvas.addEventListener("mousemove", function(evt) {
-      var xMouse = evt.offsetX || (evt.pageX - canvas.offsetLeft);
-      var yMouse = evt.offsetY || (evt.pageY - canvas.offsetTop);
+    var xMouse = evt.offsetX || (evt.pageX - canvas.offsetLeft);
+    var yMouse = evt.offsetY || (evt.pageY - canvas.offsetTop);
     mouseRotation(xMouse,yMouse);
-      }, false
-      );
+  }, false
+  );
+  //mouse click listener
+  canvas.addEventListener("mousedown", function(evt) {
+    if(evt.button != 0)
+      return;
+    var currTime = new Date().getTime();
+    if ((currTime - lastFire > fireCooldown || lastFire == 0) && ammoCount > 0 && !sprinting) {
+      lastFire = currTime;
+      fire = true;
+      ammoCount--;
+      document.getElementById("ammo-count").innerHTML = ammoCount;
+      bulletMesh.xBulletPosition = xPosition;
+      bulletMesh.zBulletPosition = zPosition;
+      bulletMesh.bulletRot = rotMouse;
+	  bulletBody = new OBJmodel(getOBJSize(bulletMesh), [xPosition,2.25,zPosition], "bullet");
+
+      playShot();
+    }
+    if(ammoCount == 0) {
+      playEmptyPickup();
+    } 
+  }, false
+  );
+  
     gl = initGL(canvas);      // Initialize the GL context
 
   // Only continue if WebGL is available and working
@@ -740,25 +1003,78 @@ function start() {
     // Next, load and set up the textures we'll be using.
     initTextures();
     // Initialise world objects
-    loadWorld();
-    loadSoldier();
-    loadBomb();
-    loadHouse();
+    loadObjects();
+    playAmbientAudio();
+    playStartingSound();
 
-  setTimeout(
-    function() 
-    {
-    initPhy();
+    document.getElementById("health-house").innerHTML = houseHP;
+    document.getElementById("health-soldier").innerHTML = playerHP;
+    document.getElementById("bomb-counter").innerHTML = "Bombs destroyed: " + bombsKilled;
+    setTimeout(
+      function() 
+      {
+        initPhy();
+
       //console.log(getOBJSize(mesh));
       // Bind keyboard handling functions to document handlers
       document.onkeydown = handleKeyDown;
       document.onkeyup = handleKeyUp;
       
       // Set up to draw the scene periodically.
-      setInterval(function() {
+      var intervalID = setInterval(function() {
+        if (textureCounter >=targetLoadedTextures && loadedMeshes >=targetLoadedMeshes){          
+          if (!gameActive)
+            clearInterval(intervalID);
         requestAnimationFrame(animate);
         handleKeys();
-      }, 1000/60);
+        setTimer(timer);
+        if (timer > endTime || houseHP <= 0 || playerHP <= 0) {
+          showEnd();
+        }
+      }
+    }, 1000/60);
     }, 500);
   }
 }
+
+function restartGame(){
+  $("#overlay-gameover").hide();
+  $("#restart-wrapper").hide();
+  gameActive = true;
+  playStartingSound();
+  removeAllBombs();
+  //Restart position, counters, hide GAME OVER text
+  timer = 0;
+
+  lastTime = 0;
+  houseHP = 1000;
+  playerHP = 100;
+  bombsSpawned = 0;
+  bombsKilled = 0;
+  totalScore = 0;
+  
+  ammoCount = 5;
+  ammoLastSpawn = 0;
+  xPosition = 0;
+  zPosition = 0;
+  document.getElementById("health-house").innerHTML = houseHP;
+  document.getElementById("health-soldier").innerHTML = playerHP;
+  document.getElementById("ammo-count").innerHTML = ammoCount;
+  start();
+}
+
+function showEnd(){
+  $("#overlay-gameover").show();
+  $("#restart-wrapper").show();
+  gameActive = false;
+  playEndingSound();
+  document.getElementById("bomb-counter").innerHTML = "Score: " + Math.round(totalScore);
+
+  document.getElementById("bomb-counter").innerHTML = "Total score: " + Math.round(totalScore);
+
+}
+
+function setTimer(time){
+  $("#timer").html(Math.ceil((endTime-timer)/1000));
+}
+

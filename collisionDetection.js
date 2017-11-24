@@ -11,8 +11,11 @@ function OBJmodel(size, position, name) {
 	this.minY = (this.position[1]-(this.size[1]/2));
 	this.maxY = (this.position[1]+(this.size[1]/2));
 
-	this.minZ = (this.position[2]-(this.size[2]/2));
-	this.maxZ = (this.position[2]+(this.size[2]/2));
+	/*var ifSoldier = 6;
+	if (this.name === "soldier" || this.name === "bullet")
+		ifSoldier = 6;*/
+	this.minZ = (this.position[2]-6-(this.size[2]/2));
+	this.maxZ = (this.position[2]-6+(this.size[2]/2));
 
 	this.detectCollision = function(b) {
 		if ((this.minX <= b.maxX && this.maxX >= b.minX) &&
