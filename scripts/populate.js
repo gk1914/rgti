@@ -16,7 +16,6 @@ function populate() {
   bodysMY[1] = new OBJmodel(house.size, house.position, "house");
 
   // ammo
-
   ammo.position = ammoSpawnPoints[0];
   ammo.rotation = [0,0,0];
   ammo.size = getOBJSize(ammo);
@@ -36,6 +35,7 @@ function populate() {
   var rock10 = importOBJ(rockResponseText);
   var rock11 = importOBJ(rockResponseText);
   var rock12 = importOBJ(rockResponseText);
+
   var rock13 = importOBJ(rockResponseText);
   var rock14 = importOBJ(rockResponseText);
   var rock15 = importOBJ(rockResponseText);
@@ -47,6 +47,7 @@ function populate() {
   var rock21 = importOBJ(rockResponseText);
   var rock22 = importOBJ(rockResponseText);
   var rock23 = importOBJ(rockResponseText);
+
   rock1.position = [12,0,-6];
   // spodaj levo
   rock2.position = [-20,0,3];
@@ -55,6 +56,7 @@ function populate() {
   rock5.position = [-22,0,22];
   rock6.position = [-6,0,18];
   rock12.position = [13,0,27];
+
   zeros = [0, 0, 0];
   rock1.rotation = zeros;
   rock2.rotation = zeros;
@@ -62,6 +64,7 @@ function populate() {
   rock4.rotation = zeros;
   rock5.rotation = zeros;
   rock6.rotation = zeros;
+
   rock12.rotation = zeros;
   // zgoraj levo
   rock7.position = [-5,0,-10];
@@ -72,10 +75,12 @@ function populate() {
   rock14.position = [-10,0,-16];
   rock15.position = [-22,0,-10];
   rock16.position = [-2,0,-22];
+
   rock7.rotation = zeros;
   rock8.rotation = zeros;
   rock9.rotation = zeros;
   rock10.rotation = zeros;
+
   rock13.rotation = zeros;
   //desno
   rock11.position = [22,0,-22];
@@ -95,6 +100,7 @@ function populate() {
   rock22.rotation = zeros;
   rock23.rotation = zeros;
   // size
+
   rock1.size = rockSize;
   rock2.size = rockSize;
   rock3.size = rockSize;
@@ -118,6 +124,7 @@ function populate() {
   rock21.size = rockSize;
   rock22.size = rockSize;
   rock23.size = rockSize;
+
   rock1 = new OBJmodel(rock1.size, rock1.position, "rock");
   rock2 = new OBJmodel(rock2.size, rock2.position, "rock");
   rock3 = new OBJmodel(rock3.size, rock3.position, "rock");
@@ -165,5 +172,6 @@ function populate() {
   rocks[20] = rock21;
   rocks[21] = rock22;
   rocks[22] = rock23;
+
 
 }

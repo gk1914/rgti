@@ -525,9 +525,6 @@ function drawOBJ(obj,texture){
   gl.drawElements(gl.TRIANGLES, obj.indexBuffer.numItems, gl.UNSIGNED_SHORT, 0);
 }
 
-
-
-
 //
 // animate
 //
@@ -733,6 +730,7 @@ function moveBomb(p1, p2) {
 	return moveVector;
 }
 
+
 // Helper: get distance between point p1 and p2
 function distance(p1, p2) {
 	var x1 = p1[0];
@@ -741,7 +739,6 @@ function distance(p1, p2) {
 	var y2 = p2[1];
 	return Math.sqrt((x1-x2)*(x1-x2) + (y1-y2)*(y1-y2));
 }
-
 
 
 //
@@ -795,7 +792,7 @@ function handleKeys() {
   }
   else
 	sprinting = false;
-  
+
   if (currentlyPressedKeys[32]) {
     // delete bomb that spawned first
     destroyBomb(0);
@@ -810,7 +807,6 @@ function mouseRotation(x,y){
 }
 //get angle
 function angle(a1, a2, b1, b2) {
-
   theta = Math.atan2(b1 - a1, a2 - b2);
   if (theta < 0.0)
     theta += 2*Math.PI
@@ -840,6 +836,17 @@ function initPhy() {
   populate();
 }
 
+//
+// Collision detection
+function checkCollisions(){
+    // Soldier vs Bombs
+  for (var i = 0; i < bombList.length; i++) {
+  //if(bodysMY[0].detectCollision(getBombBody(i)) != null){
+    if (collisionCheck(bodysMY[0], getBombBody(i), 0.75)) {
+      destroyBomb(i); 
+      //Soldier dies
+      playerHP -= 10;
+      document.getElementById("health-soldier").innerHTML = playerHP;
 
 function updatePhysics() {
   var collision, imesh, bodyMY, moveX, moveZ, i = bodysMY.length;
@@ -909,6 +916,7 @@ function checkCollisions(){
         fire = false;
       }
     }
+
 	bulletBody.setPosition([bulletBody.position[0],bulletBody.position[1],bulletBody.position[2]+1]);
   }
 
@@ -986,6 +994,7 @@ function start() {
     } 
   }, false
   );
+
   
     gl = initGL(canvas);      // Initialize the GL context
 
@@ -1055,6 +1064,7 @@ function restartGame(){
   
   ammoCount = 5;
   ammoLastSpawn = 0;
+
   xPosition = 0;
   zPosition = 0;
   document.getElementById("health-house").innerHTML = houseHP;

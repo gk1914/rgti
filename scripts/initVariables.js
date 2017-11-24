@@ -65,6 +65,7 @@ var isCollision = false;
 //
 // Firing
 var fire=false;
+
 var sprinting = false;
 var lastFire = 0;
 var ammoCount = 5;
@@ -78,16 +79,19 @@ var bulletBody;
 //
 // Moving bombs
 var bombSpeed = 0.004;
+
 var bombSize;
 var bombResponseText;
 
 var lastSpawn = 0;
 var spawnInterval = 2000;
 var lastSpawnIndex = 0;
+
 var bombSpawnPoints = [
 	[10,0,-23],
 	[-20,0,-20],
 	[0,0,-25],
+
 	[-15,0,-20],
 	[-23,0,-14]];
 	//[10,0,29]];
@@ -122,6 +126,7 @@ var ammoSpawnPoints = [
 	[-12,0,-2],
 	[-12,0,16],
 	[8,0,20]];
+
 //
 // Nature
 var rocks;
@@ -139,6 +144,7 @@ var gameActive = true;
 var totalScore = 0;
 
 var endTime = 45000;
+
 
 
 var meshes = [];
