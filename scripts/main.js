@@ -611,7 +611,9 @@ lastTime = timeNow;
    spawnAmmo();
    console.log("spanw ammo");  
  }
+
  if (ammoActive && distance([xPosition, zPosition+6], [ammo.position[0], ammo.position[2]]) < 0.75) {
+
    lastAmmoPickup = timeNow;
    ammoCount += 5;
    document.getElementById("ammo-count").innerHTML = ammoCount;
@@ -674,6 +676,14 @@ function spawnBombs() {
   meshes[meshes.length] = bombList[tempIdx];
   bodysMY[bodysMY.length] = new OBJmodel(bombList[tempIdx].size, bombList[tempIdx].position, "bomb");
   bombsSpawned++;
+}
+
+function removeAllBombs(){
+  for (var i = 0; i < bombList.length; i++) {
+    bombList.splice(i,1);
+    meshes.splice(i+2,1);
+    bodysMY.splice(i+2,1);
+  }
 }
 
 function removeAllBombs(){
@@ -857,11 +867,13 @@ function checkCollisions(){
       //Soldier dies
       playerHP -= 10;
       document.getElementById("health-soldier").innerHTML = playerHP;
+
     }
   }
 
   //House vs Bombs
   for (var j = 0; j < bombList.length; j++) {
+
     if(bodysMY[1].detectCollision(getBombBody(j)) != null) {
       destroyBomb(j);   
       houseHP -= 100;
@@ -870,12 +882,15 @@ function checkCollisions(){
         document.getElementById("game-status").innerHTML = "GAME OVER!";
         gameActive = false;
       }
+
     }
   }
+}
 
   //Bullet vs Bombs
   for (var j = 0; j < bombList.length; j++) {
     if (fire && collisionCheck(bulletBody, getBombBody(j), 0.5)) {
+
 	  fire = false;
       destroyBomb(j);
       bombsKilled++;
@@ -887,10 +902,12 @@ function checkCollisions(){
 	  console.log("score: " + score);
 	  totalScore += score;
       document.getElementById("bomb-counter").innerHTML = "Bombs destroyed: " + bombsKilled;
+
     }
   }
   
   //Bullet vs Nature (rocks, trees)
+
   if (fire) {
 	bulletBody.setPosition([bulletBody.position[0],bulletBody.position[1],bulletBody.position[2]-1]);					// spet offseting, tokrat zato ker je metek dvignjen na Y osi, skala pa ni (je na Y=0)
 	for (var j = 0; j < rocks.length; j++) {																			//   --> treba popravit Z os metka, da deluje collision kot je treba tudi če streljamo iz strani
@@ -900,6 +917,7 @@ function checkCollisions(){
     }
 	bulletBody.setPosition([bulletBody.position[0],bulletBody.position[1],bulletBody.position[2]+1]);
   }
+
 
   //Bullet vs House
   if (fire) {
@@ -1037,10 +1055,12 @@ function restartGame(){
   removeAllBombs();
   //Restart position, counters, hide GAME OVER text
   timer = 0;
+
   lastTime = 0;
   houseHP = 1000;
   playerHP = 100;
   bombsSpawned = 0;
+
   bombsKilled = 0;
   ammoCount = 5;
   xPosition = 0;
@@ -1057,13 +1077,14 @@ function showEnd(){
   gameActive = false;
   playEndingSound();
   document.getElementById("game-status").innerHTML = "Total score: " + Math.round(totalScore);
+
 }
 
 function setTimer(time){
   $("#timer").html(Math.ceil((endTime-timer)/1000));
 }
-
 //
 // TODO comment:
 // * okolje ni še dokončano
 // * ene par spawnov in poti bombic je že kar uredu, treba še par dodat/dokončat
+

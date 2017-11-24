@@ -118,6 +118,7 @@ var bombsKilled = 0;
 var bombsSpawned = 0;
 var gameActive = true;
 var totalScore = 0;
+
 var endTime = 30000;
 
 
