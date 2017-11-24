@@ -168,8 +168,12 @@ function initShaders() {
 function setMatrixUniforms() {
   gl.uniformMatrix4fv(shaderProgram.pMatrixUniform, false, pMatrix);
   gl.uniformMatrix4fv(shaderProgram.mvMatrixUniform, false, mvMatrix);
-}
 
+  var normalMatrix = mat3.create();
+  mat4.toInverseMat3(mvMatrix, normalMatrix);
+  mat3.transpose(normalMatrix);
+  gl.uniformMatrix3fv(shaderProgram.nMatrixUniform, false, normalMatrix);
+}
 //
 // initTextures
 //
@@ -351,6 +355,7 @@ function handleTextureLoaded(texture) {
 
   // when texture loading is finished we can draw scene.
   texturesLoaded = true;
+  textureCounter=textureCounter+1;
 }
 
 //
@@ -395,6 +400,17 @@ function drawScene() {
   }
   mvPushMatrix();
 
+  gl.uniform3f(shaderProgram.ambientColorUniform,0.5,0.5,0.7);
+
+  var lightingDirection = [-0.25,-0.25,0.25];
+  var adjustedLD = vec3.create();
+  vec3.normalize(lightingDirection, adjustedLD);
+  vec3.scale(adjustedLD, -2);
+  //console.log(adjustedLD);
+  gl.uniform3fv(shaderProgram.lightingDirectionUniform, adjustedLD);
+
+  gl.uniform3f(shaderProgram.directionalColorUniform,1.0,0.6,0.0);
+
   gl.activeTexture(gl.TEXTURE0);
   gl.bindTexture(gl.TEXTURE_2D, wallTexture);
   
@@ -416,17 +432,6 @@ function drawScene() {
   // ^^^^^^^
   //  WORLD
   
-
-  gl.uniform3f(shaderProgram.ambientColorUniform,0.88,0.81,1);
-
-  var lightingDirection = [-0.25,-0.25,-0.25];
-  var adjustedLD = vec3.create();
-  vec3.normalize(lightingDirection, adjustedLD);
-  vec3.scale(adjustedLD, -1);
-  gl.uniform3fv(shaderProgram.lightingDirectionUniform, adjustedLD);
-
-  gl.uniform3f(shaderProgram.directionalColorUniform,1.0,1.0,1.0);
-
 
 
   for (var i = 0; i < rocks.length; i++) {
@@ -879,13 +884,12 @@ function checkCollisions(){
       houseHP -= 100;
       document.getElementById("health-house").innerHTML = houseHP
       if (houseHP == 0) {
-        document.getElementById("game-status").innerHTML = "GAME OVER!";
         gameActive = false;
       }
 
     }
   }
-}
+
 
   //Bullet vs Bombs
   for (var j = 0; j < bombList.length; j++) {
@@ -901,7 +905,6 @@ function checkCollisions(){
 		  score = Math.max(10, (1 - (bombList[j].aliveFor/7000)) * 100);
 	  console.log("score: " + score);
 	  totalScore += score;
-      document.getElementById("bomb-counter").innerHTML = "Bombs destroyed: " + bombsKilled;
 
     }
   }
@@ -973,7 +976,8 @@ function start() {
   );
   //mouse click listener
   canvas.addEventListener("mousedown", function(evt) {
-    console.log("cscscsc");
+    if(evt.button != 0)
+      return;
     var currTime = new Date().getTime();
     if ((currTime - lastFire > fireCooldown || lastFire == 0) && ammoCount > 0) {
       lastFire = currTime;
@@ -1017,7 +1021,6 @@ function start() {
     playAmbientAudio();
     playStartingSound();
 
-    document.getElementById("game-status").innerHTML = "Game running.....";
     document.getElementById("health-house").innerHTML = houseHP;
     document.getElementById("health-soldier").innerHTML = playerHP;
     document.getElementById("bomb-counter").innerHTML = "Bombs destroyed: " + bombsKilled;
@@ -1033,14 +1036,15 @@ function start() {
       
       // Set up to draw the scene periodically.
       var intervalID = setInterval(function() {
-        if (!gameActive)
-         clearInterval(intervalID);
-       requestAnimationFrame(animate);
-       handleKeys();
-       setTimer(timer);
-       if (timer > endTime) {
-        showEnd();
-
+        if (textureCounter >=targetLoadedTextures && loadedMeshes >=targetLoadedMeshes){          
+          if (!gameActive)
+           clearInterval(intervalID);
+         requestAnimationFrame(animate);
+         handleKeys();
+         setTimer(timer);
+         if (timer > endTime) {
+          showEnd();
+        }
       }
     }, 1000/60);
     }, 500);
@@ -1076,7 +1080,9 @@ function showEnd(){
   $("#restart-wrapper").show();
   gameActive = false;
   playEndingSound();
-  document.getElementById("game-status").innerHTML = "Total score: " + Math.round(totalScore);
+  document.getElementById("bomb-counter").innerHTML = "Score: " + Math.round(totalScore);
+
+  document.getElementById("bomb-counter").innerHTML = "Total score: " + Math.round(totalScore);
 
 }
 

@@ -2,6 +2,7 @@
 function importOBJ(data){
   var mesh = new OBJ.Mesh(data);
   OBJ.initMeshBuffers(gl, mesh);
+  loadedMeshes = loadedMeshes + 1;
   return mesh
 }
 function loadWorld() {
@@ -10,6 +11,7 @@ function loadWorld() {
   request.onreadystatechange = function () {
     if (request.readyState == 4) {
       handleLoadedWorld(request.responseText);
+      loadedMeshes = loadedMeshes + 1;
     }
   }
   request.send();

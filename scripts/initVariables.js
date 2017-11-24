@@ -15,6 +15,13 @@ var ammo;
 var bulletMesh;
 var rockMesh;
 var bombList = [];
+var loadedMeshes = 0;
+//set how many meshes needs to be loaded
+var targetLoadedMeshes = 7;
+var textureCounter = 0;
+//set how many textures needs to be loaded
+var targetLoadedTextures = 7;
+
 // Model-view and projection matrix and model-view matrix stack
 var mvMatrixStack = [];
 var mvMatrix = mat4.create();
