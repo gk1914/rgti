@@ -1,52 +1,67 @@
 #content {
-	width: 100%;
+    width: 100%;
 }
 
 canvas {
-	display: inline;
+    display: inline;
 }
 
 h1 {
-	text-align: left;
+    text-align: left;
 }
 
 h2 {
-	text-align: left;
+    text-align: left;
 }
 
 ul {
-	text-align: left;
+    text-align: left;
 }
 
 td {
-	width: 200px;
+    width: 200px;
+}
+#timerText{
+    color: white;
+    font-size: 40px;
+    display: inline-block;
+    margin: 0;
+    position: relative;
+    float: left;
+    pointer-events:none;
+    -webkit-user-select: none;  
+    -khtml-user-select: none;   
+    -moz-user-select: none; 
+    -o-user-select: none;    
+    user-select: none; 
 }
 
 #loadingtext {
-	position:absolute;
-	top:250px;
-	left:150px;
-	font-size:2em;
-	color: white;
+    position:absolute;
+    top:250px;
+    left:150px;
+    font-size:2em;
+    color: white;
 }
 
 #glcanvas{
-	cursor: crosshair;
+    cursor: crosshair;
 }
 
 #container {
   position: relative;
   width: 400px;
   height: 300px;
+  left: calc(50% - 640px);
 }
 #container canvas, #overlay {
   position: absolute;
 }
 #overlay{
-	color: white;
-	background: rgba(90, 104, 91, 0.9215686274509803);
-	height: 75px;
-	font-size: 21px;
+    color: white;
+    background: rgba(90, 104, 91, 0.9215686274509803);
+    height: 75px;
+    font-size: 21px;
     left: 720px;
     bottom: 0;
     right: 0;
@@ -76,6 +91,7 @@ td {
     user-select: none; 
 }
 #timer{
+    float: left;
     pointer-events:none;
     -webkit-user-select: none;  
     -khtml-user-select: none;   
@@ -120,7 +136,7 @@ td {
     width: 420px;
     height: 100%;
     position: absolute;
-    left: calc(100% - 310px);
+    text-align: center;
 }
 #gameover{
     margin: 0;
@@ -136,7 +152,7 @@ td {
     position: relative;
 }
 #ammo-count{
-	color: white;
+    color: white;
     font-size: 39px;
     display: inline-block;
     top: -20px;
@@ -152,8 +168,8 @@ td {
 
 }
 .health_status{
-	position:relative;
-	top:-10px;
+    position:relative;
+    top:-10px;
 }
 .health_wrapper{
     display: inline-block;
@@ -164,7 +180,7 @@ td {
 .house_wrapper{
     display: inline-block;
     position: absolute;
-	right: 370px;
+    right: 370px;
 }
 #health-soldier, #health-house{
 
@@ -176,6 +192,6 @@ td {
     position: relative;
 }
 .house_wrapper .picture{
-    top: -6px;	
+    top: -6px;  
 }
 
