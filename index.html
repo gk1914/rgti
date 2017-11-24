@@ -1,6 +1,6 @@
 <html>
 	<head>
-		<title>Zombie</title>
+		<title>Protect the core</title>
 		<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
 		<link rel="stylesheet" href="./style/webgl.css" type="text/css">
 		<script type="text/javascript" src="./scripts/glMatrix-0.9.5.min.js"></script>
@@ -53,8 +53,6 @@
 		    uniform vec3 uLightingDirection;	// light direction uniform
 		    uniform vec3 uDirectionalColor;		// light color
 
-		    uniform bool uUseLighting;	// lighting switch
-
 			// variable for passing texture coordinates and lighting weights
 			// from vertex shader to fragment shader
 		    varying vec2 vTextureCoord;
@@ -78,8 +76,8 @@
 		</script>
 	</head>
 
-	<body onload="start()">
-		<h1>Zombie</h1>
+	<body onload="start()"  oncontextmenu="return false;">
+		<h1>Protect the core</h1>
 		<div id="content">
 			<div id="container">
 				<canvas id="glcanvas"  width="1280px" height="720px">
@@ -123,17 +121,15 @@
 			position: absolute;
 			bottom: 20px;
 			left: 30px;
-			"><p id="timer">0</p>     
+			">
+			<p id="timerText">Time:  </p>   
+			<p id="timer">0</p>     
 			</div>
 			</div>
 
     		<div id="loadingtext">Loading world...</div>
 			
-			<div id='info'>
-				<p id="game-status">Running</p>
-			</div>
-			
-			<a href="./"><- Back</a>
+			<p>Use W,A,S,D to move player around map. Holding SHIFT makes the player sprint, but unable to shoot. For shooting use left mouse click.</p>
 		</div>
 	</body>
 </html>
