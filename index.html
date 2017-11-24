@@ -9,6 +9,7 @@
 		<script src="./scripts/main.js" type="text/javascript"></script>
 		<script src="./scripts/collisionDetection.js" type="text/javascript"></script> 
 		<script src="./scripts/audio.js" type="text/javascript"></script> 
+		<script src="./scripts/populate.js" type="text/javascript"></script> 
 		<script src="./scripts/importOBJ.js" type="text/javascript"></script> 
 		<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
 
@@ -85,38 +86,51 @@
 				
 					No <code>&lt;canvas&gt;</code> suppport in your browser.
 				</canvas>
+			  <div id="overlay-gameover">
+				<p id="gameover">GAME OVER</p>
+				<p id="bomb-counter"></p>
+			  </div>
+			  <div id="restart-wrapper" onclick="restartGame()">
+					<p id="restart">Restart</p>				
+				</div>
+
 			  <div id="overlay">
-			  <div style="position:relative;">
-			  	
-			  	<div class="ammo_wrap">
-			  		<div style="display: inline-block;">		  			
-				  		<img class="picture" src="assets/ammopicture.png">
-			  		</div>
+				  <div style="position:relative;">
+				  	
+				  	<div class="ammo_wrap">
+				  		<div style="display: inline-block;">		  			
+					  		<img class="picture" src="assets/ammopicture.png">
+				  		</div>
 
-					<p id="ammo-count">5</p>
-			  	</div>
-			  	<div class="health_wrapper">
-			  		<div style="display: inline-block;">
-			  			<img class="picture health_status" src="assets/health.png">
-					</div>
-					<p id="health-soldier">100</p>
-
-			  	</div>
-			  	<div class="house_wrapper">
-				  	<div style="display: inline-block;">
-				  		<img class="picture house_status" src="assets/house.png">			  		
+						<p id="ammo-count">5</p>
 				  	</div>
-					<p id="health-house"></p>
-			  	</div>
+				  	<div class="health_wrapper">
+				  		<div style="display: inline-block;">
+				  			<img class="picture health_status" src="assets/health.png">
+						</div>
+						<p id="health-soldier">100</p>
+
+				  	</div>
+				  	<div class="house_wrapper">
+					  	<div style="display: inline-block;">
+					  		<img class="picture house_status" src="assets/house.png">			  		
+					  	</div>
+						<p id="health-house"></p>
+				  	</div>
+				  </div>
 			  </div>
-			  </div>
+			<div style="
+			position: absolute;
+			bottom: 20px;
+			left: 30px;
+			"><p id="timer">0</p>     
+			</div>
 			</div>
 
     		<div id="loadingtext">Loading world...</div>
 			
 			<div id='info'>
 				<p id="game-status">Running</p>
-				<p id="bomb-counter"></p>
 			</div>
 			
 			<a href="./"><- Back</a>
